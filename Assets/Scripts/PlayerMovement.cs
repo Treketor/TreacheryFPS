@@ -5,23 +5,23 @@ using UnityEngine.InputSystem;
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float moveSpeed = 5f;
-    public float sprintSpeed = 8f;
-    public float movementMultiplier = 1f;
-    public float groundAcceleration = 25f;
-    public float airAcceleration = 8f;
-    public float maxAirSpeed = 4f;
-    public float minSprintSpeed = 2f;
-    public float jumpHeight = 1.5f;
-    public float gravity = -20f;
+    [SerializeField] float moveSpeed = 5f;
+    [SerializeField] float sprintSpeed = 10f;
+    [SerializeField] float movementMultiplier = 1f;
+    [SerializeField] float groundAcceleration = 25f;
+    [SerializeField] float airAcceleration = 8f;
+    [SerializeField] float maxAirSpeed = 4f;
+    [SerializeField] float minSprintSpeed = 2f;
+    [SerializeField] float jumpHeight = 1.5f;
+    [SerializeField] float gravity = -30f;
 
     [Header("Crouch Settings")]
-    public float crouchHeight = 1f;
-    public float crouchSpeed = 2.5f;
-    public float crouchTransitionTime = 0.2f;
-    public bool crouchToggle = true;
-    public Transform cameraTransform;
-    public float cameraHeightOffset = 0.2f;
+    [SerializeField] float crouchHeight =1.251f;
+    [SerializeField] float crouchSpeed = 2.5f;
+    [SerializeField] float crouchTransitionTime = 0.075f;
+    [SerializeField] bool crouchToggle = true;
+    [SerializeField] Transform cameraTransform;
+    [SerializeField] float cameraHeightOffset = 0.2f;
 
     private Vector3 currentHorizontalVelocity = Vector3.zero;
     private float verticalVelocity = 0f;
@@ -34,7 +34,7 @@ public class PlayerMovement : MonoBehaviour
     private CharacterController controller;
 
     [Header("Input")]
-    [SerializeField] private InputActionAsset playerInput;
+    [SerializeField] InputActionAsset playerInput;
     private InputAction moveAction;
     private InputAction jumpAction;
     private InputAction sprintAction;
@@ -88,16 +88,30 @@ public class PlayerMovement : MonoBehaviour
         {
             if (crouchToggle)
             {
-                // Toggle crouch
+                // Toggle crouch - check if there's space to stand
                 if (crouchAction.WasPressedThisFrame())
                 {
+                    if (isCrouching && !CanStandUp())
+                    {
+                        // Can't stand up, blocked by ceiling
+                        return;
+                    }
                     isCrouching = !isCrouching;
                 }
             }
             else
             {
-                // Hold to crouch
-                isCrouching = crouchAction.IsPressed();
+                // Hold to crouch - check if there's space to stand when releasing
+                bool wantsToCrouch = crouchAction.IsPressed();
+                if (isCrouching && !wantsToCrouch && !CanStandUp())
+                {
+                    // Force crouch if blocked by ceiling
+                    isCrouching = true;
+                }
+                else
+                {
+                    isCrouching = wantsToCrouch;
+                }
             }
         }
 
@@ -114,6 +128,16 @@ public class PlayerMovement : MonoBehaviour
         }
 
         UpdateCameraPosition();
+    }
+
+    private bool CanStandUp()
+    {
+        // Check if there's enough space above the player to stand up
+        float checkHeight = standingHeight - crouchHeight;
+        Vector3 checkStart = transform.position + Vector3.up * (crouchHeight / 2f);
+        float checkRadius = controller.radius * 0.9f;
+        
+        return !Physics.SphereCast(checkStart, checkRadius, Vector3.up, out _, checkHeight);
     }
 
     private void HandleSprint(float inputZ)
