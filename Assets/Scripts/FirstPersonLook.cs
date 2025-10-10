@@ -5,8 +5,8 @@ public class FirstPersonLook : MonoBehaviour
 {
     [Header("Look Settings")]
     public float sensitivity = 2f;
-    public float maxYAngle = 90f;
     public Transform cameraTransform;
+    private float maxYAngle = 90f;
 
     [Header("Input")]
     [SerializeField] private InputActionAsset playerInput;
