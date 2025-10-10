@@ -27,9 +27,9 @@ public class FirstPersonLook : MonoBehaviour
     {
         Vector2 lookInput = lookAction.ReadValue<Vector2>();
 
-        // Apply sensitivity and frame rate independence
-        float deltaX = lookInput.x * sensitivity * Time.deltaTime;
-        float deltaY = lookInput.y * sensitivity * Time.deltaTime;
+        // Apply sensitivity (mouse delta is already frame-based)
+        float deltaX = lookInput.x * sensitivity;
+        float deltaY = lookInput.y * sensitivity;
 
         // Horizontal rotation (player body)
         transform.Rotate(Vector3.up, deltaX);

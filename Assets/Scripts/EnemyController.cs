@@ -12,7 +12,15 @@ public class EnemyController : MonoBehaviour
     Transform _player;
     float _cd;
 
-    void Awake() { _agent = GetComponent<NavMeshAgent>(); }
+    void Awake()
+    {
+        _agent = GetComponent<NavMeshAgent>();
+        if (_agent != null)
+        {
+            _agent.avoidancePriority = Random.Range(30, 70);
+            _agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+        }
+    }
 
     void Start() { _player = GameObject.FindGameObjectWithTag("Player").transform; }
 

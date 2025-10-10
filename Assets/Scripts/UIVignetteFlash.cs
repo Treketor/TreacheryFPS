@@ -31,17 +31,16 @@ public class UIVignetteFlash : MonoBehaviour
 
     void OnDamaged(float amount, Vector3 hitPoint, Vector3 hitNormal)
     {
-        _target = damageFlashColor;
+        vignette.color = damageFlashColor;
     }
 
     void OnHealed()
     {
-        _target = healFlashColor;
+        vignette.color = healFlashColor;
     }
 
     void Update()
     {
-        vignette.color = Color.Lerp(vignette.color, _target, Time.deltaTime * fadeSpeed);
-        _target = Color.Lerp(_target, new Color(0f, 0f, 0f, 0f), Time.deltaTime * fadeSpeed);
+        vignette.color = Color.Lerp(vignette.color, new Color(0f, 0f, 0f, 0f), Time.deltaTime * fadeSpeed);
     }
 }
