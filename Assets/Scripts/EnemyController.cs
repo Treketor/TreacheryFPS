@@ -1,41 +1,42 @@
 using UnityEngine;
-using UnityEngine.AI;
 
-[RequireComponent(typeof(NavMeshAgent))]
+// This script handles zombie melee attacks
+// Movement is handled by HoardLocomotion script
 public class EnemyController : MonoBehaviour
 {
     public float meleeRange = 1.6f;
     public float meleeDamage = 10f;
     public float attackCooldown = 1f;
 
-    NavMeshAgent _agent;
     Transform _player;
     float _cd;
 
-    void Awake()
-    {
-        _agent = GetComponent<NavMeshAgent>();
-        if (_agent != null)
+    void Start() 
+    { 
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
         {
-            _agent.avoidancePriority = Random.Range(30, 70);
-            _agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+            _player = playerObj.transform;
         }
     }
-
-    void Start() { _player = GameObject.FindGameObjectWithTag("Player").transform; }
 
     void Update()
     {
         if (!_player) return;
-        _agent.SetDestination(_player.position);
+        
+        // Cooldown timer
         if (_cd > 0f) _cd -= Time.deltaTime;
 
-        var dist = Vector3.Distance(transform.position, _player.position);
+        // Check if in melee range
+        float dist = Vector3.Distance(transform.position, _player.position);
         if (dist <= meleeRange && _cd <= 0f)
         {
             _cd = attackCooldown;
             if (_player.TryGetComponent<IDamageable>(out var damageable))
-                damageable.TakeDamage(meleeDamage, _player.position, (_player.position - transform.position).normalized);
+            {
+                Vector3 direction = (_player.position - transform.position).normalized;
+                damageable.TakeDamage(meleeDamage, _player.position, direction);
+            }
         }
     }
 }

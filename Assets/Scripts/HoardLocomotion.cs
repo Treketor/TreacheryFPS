@@ -4,126 +4,158 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class HoardLocomotion : MonoBehaviour
 {
-    [Header("Targets")]
+    [Header("Target")]
     public Transform player;
 
-    [Header("Speeds")]
-    public float moveSpeed = 3.2f;
-    public float rotationSpeed = 720f; // degrees per second
+    [Header("Movement")]
+    [Tooltip("Walk speed of the zombie")]
+    public float walkSpeed = 2.5f;
+    [Tooltip("How fast the zombie rotates")]
+    public float rotationSpeed = 180f;
+    [Tooltip("Zombies slow down near player for better melee")]
+    public float slowdownDistance = 2f;
+    [Tooltip("Minimum speed when near player")]
+    public float minSpeed = 0.8f;
 
-    [Header("Separation")]
-    public float separationRadius = 0.9f;
-    public float separationWeight = 6f;
-    public LayerMask separationMask; // Enemy Layer
+    [Header("Separation (Anti-Clumping)")]
+    [Tooltip("How far to check for nearby zombies")]
+    public float separationRadius = 1.2f;
+    [Tooltip("How strong the push-away force is")]
+    public float separationStrength = 2f;
+    [Tooltip("Layer mask for other zombies")]
+    public LayerMask zombieLayer;
 
-    [Header("Slotting Around Player")]
-    public float slotRadius = 1.5f; // Radius around player to slot into
-    public float slotWeight = 0.45f; // How strongly to move towards slot position
-    [Range(0f, 1f)] public float slotResponsiveness = 0.15f; // How quickly to adjust slot position
+    [Header("NavMesh Settings")]
+    [Tooltip("Stopping distance from target")]
+    public float stoppingDistance = 1.5f;
 
-    [Header("Side Bias")]
-    [Range(0f, 1f)] public float lateralBias = 0.25f;
-
-    NavMeshAgent _agent;
-    Vector3 _velocity;
-    float _slotAngle; // current target angle around player
-    float _slotAngleGoal; // desired angle we ease towards
-    int _idHash;
+    private NavMeshAgent agent;
+    private Vector3 currentVelocity;
+    private int zombieID;
 
     void Awake()
     {
-        _agent = GetComponent<NavMeshAgent>();
-        _agent.updatePosition = false;
-        _agent.updateRotation = false;
-        _agent.autoBraking = false;
-
-        // Unique, stable angle seed per enemy
-        _idHash = Mathf.Abs(GetInstanceID());
-        _slotAngle = _slotAngleGoal = (_idHash % 360) * Mathf.Deg2Rad;
+        agent = GetComponent<NavMeshAgent>();
+        
+        // Configure NavMeshAgent for COD Zombies style movement
+        agent.speed = walkSpeed;
+        agent.angularSpeed = rotationSpeed;
+        agent.acceleration = 8f;
+        agent.stoppingDistance = stoppingDistance;
+        agent.autoBraking = true;
+        agent.updateRotation = true;
+        agent.updatePosition = true;
+        
+        // Avoidance settings - varied priorities prevent deadlocks
+        agent.avoidancePriority = Random.Range(30, 70);
+        agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+        agent.radius = 0.5f;
+        
+        // Unique ID for this zombie
+        zombieID = GetInstanceID();
     }
 
     void Start()
     {
-        if (!player)
+        // Find player if not assigned
+        if (player == null)
         {
-            var p = GameObject.FindGameObjectWithTag("Player");
-            if (p) player = p.transform;
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+            {
+                player = playerObj.transform;
+            }
         }
     }
 
     void Update()
     {
-        if (!player) return;
+        if (player == null || agent == null || !agent.isOnNavMesh)
+            return;
 
-        _agent.SetDestination(player.position);
-        Vector3 desired = _agent.desiredVelocity;
+        // Calculate distance to player
+        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        Vector3 toPlayer = player.position - transform.position;
-        Vector2 toPlayer2 = new(toPlayer.x, toPlayer.z);
-        float baseAngle = Mathf.Atan2(toPlayer2.y, toPlayer2.x);
+        // Calculate separation force FIRST
+        Vector3 separationForce = CalculateSeparation();
 
-        float angleOffset = (_idHash * 0.61803398875f) % (2f * Mathf.PI); // golden ratio offset
-        _slotAngleGoal = baseAngle + angleOffset;
-
-        _slotAngle = Mathf.LerpAngle(_slotAngle, _slotAngleGoal, slotResponsiveness);
-
-        Vector3 slotDir = new(Mathf.Cos(_slotAngle), 0f, Mathf.Sin(_slotAngle));
-        Vector3 slotPos = player.position - slotDir * slotRadius;
-        Vector3 toSlot = (slotPos - transform.position);
-        Vector3 slotSteer = toSlot.normalized * moveSpeed;
-
-        Vector3 separation = Vector3.zero;
-        int hits = 0;
-        var center = transform.position + Vector3.up * 0.25f;
-        Collider[] cols = Physics.OverlapSphere(center, separationRadius, separationMask, QueryTriggerInteraction.Ignore);
-        for (int i = 0; i < cols.Length; i++)
+        // Apply separation by offsetting the target position
+        Vector3 targetPosition = player.position + separationForce;
+        
+        // Sample to ensure it's on the NavMesh
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(targetPosition, out hit, 2f, agent.areaMask))
         {
-            var other = cols[i];
-            if (other.attachedRigidbody && other.attachedRigidbody.gameObject == gameObject) continue;
-            Vector3 away = transform.position - other.ClosestPoint(transform.position);
-            float dist = away.magnitude + 0.0001f;
-            separation += away / (dist * dist);
-            hits++;
+            agent.SetDestination(hit.position);
         }
-        if (hits > 0) separation = separation.normalized * moveSpeed;
-
-        Vector3 fwd = desired.sqrMagnitude > 0.001f ? desired.normalized : transform.forward;
-        Vector3 right = new Vector3(fwd.z, 0f, -fwd.x);
-
-        float sideSign = ((_idHash & 1) == 0) ? 1f : -1f;
-        Vector3 side = right * sideSign * moveSpeed * lateralBias;
-
-        Vector3 steer =
-            desired.normalized * moveSpeed * (1f - slotWeight) +
-            slotSteer * slotWeight +
-            separation * (separationWeight / Mathf.Max(1f, hits)) +
-            side;
-
-        Vector3 step = steer * Time.deltaTime;
-        if (step.sqrMagnitude > 0.0001f)
+        else
         {
-            Quaternion targetRot = Quaternion.LookRotation(step.normalized, Vector3.up);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
+            // If separation target is off-mesh, just go to player
+            agent.SetDestination(player.position);
         }
 
-        Vector3 nextPos = transform.position + step;
-        _agent.nextPosition = nextPos;
-        transform.position = nextPos;
+        // Apply speed based on distance (slow down when close for better melee)
+        float speedMultiplier = Mathf.Lerp(minSpeed, 1f, Mathf.InverseLerp(0f, slowdownDistance, distanceToPlayer));
+        agent.speed = walkSpeed * speedMultiplier;
+    }
+
+    Vector3 CalculateSeparation()
+    {
+        Vector3 separationForce = Vector3.zero;
+        int neighborCount = 0;
+
+        // Find nearby zombies
+        Collider[] nearbyZombies = Physics.OverlapSphere(transform.position, separationRadius, zombieLayer);
+
+        foreach (Collider col in nearbyZombies)
+        {
+            // Skip self
+            if (col.gameObject == gameObject)
+                continue;
+
+            // Calculate push-away direction
+            Vector3 awayFromNeighbor = transform.position - col.transform.position;
+            awayFromNeighbor.y = 0; // Keep on horizontal plane
+
+            float distance = awayFromNeighbor.magnitude;
+            
+            if (distance > 0.01f && distance < separationRadius)
+            {
+                // Stronger push when closer (inverse square falloff)
+                float pushStrength = separationRadius / (distance + 0.1f);
+                separationForce += awayFromNeighbor.normalized * pushStrength;
+                neighborCount++;
+            }
+        }
+
+        // Average and scale by strength
+        if (neighborCount > 0)
+        {
+            separationForce = (separationForce / neighborCount) * separationStrength;
+        }
+
+        return separationForce;
     }
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()
     {
-        Gizmos.color = new Color(1, 0.6f, 0f, 0.35f);
-        Gizmos.DrawWireSphere(transform.position + Vector3.up * 0.25f, separationRadius);
-        if (player)
+        // Draw separation radius
+        Gizmos.color = new Color(1f, 0.5f, 0f, 0.3f);
+        Gizmos.DrawWireSphere(transform.position, separationRadius);
+
+        // Draw line to player
+        if (player != null)
         {
-            // draw slot position
-            Vector3 slotDir = new Vector3(Mathf.Cos(_slotAngle), 0f, Mathf.Sin(_slotAngle));
-            Vector3 slotPos = player.position - slotDir * slotRadius;
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawLine(transform.position, slotPos);
-            Gizmos.DrawWireSphere(slotPos, 0.15f);
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(transform.position, player.position);
+        }
+
+        // Draw stopping distance
+        Gizmos.color = new Color(0f, 1f, 0f, 0.2f);
+        if (player != null)
+        {
+            Gizmos.DrawWireSphere(player.position, stoppingDistance);
         }
     }
 #endif
