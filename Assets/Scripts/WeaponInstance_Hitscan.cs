@@ -21,13 +21,22 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     bool _reloading;
 
     public System.Action<int, int> OnAmmoChanged;
+    public System.Action<string, string> OnTierChanged;
+
     public string DisplayName => displayName;
     public string TierName => tierName;
     public int CurrentMag => _inMag;
     public int CurrentReserve => 9999; // infinite reserve for now
 
-    void Awake() { _inMag = magSize; }
-    void Update() { if (_cooldown > 0f) _cooldown -= Time.deltaTime; }
+    void Awake()
+    {
+        _inMag = magSize;
+    }
+
+    void Update()
+    {
+        if (_cooldown > 0f) _cooldown -= Time.deltaTime;
+    }
 
     public void TryFire()
     {
@@ -57,6 +66,19 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         yield return new WaitForSeconds(reloadTime);
         _inMag = magSize;
         _reloading = false;
+        OnAmmoChanged?.Invoke(_inMag, CurrentReserve);
+    }
+
+    public void ApplyTier(string newTierName, int newMagSize, float newDamage, float newReloadTime, float newSpread)
+    {
+        tierName = newTierName;
+        magSize = newMagSize;
+        damage = newDamage;
+        reloadTime = newReloadTime;
+        spread = newSpread;
+
+        _inMag = Mathf.Min(_inMag, magSize); // clamp if mag shrank
+        OnTierChanged?.Invoke(displayName, tierName);
         OnAmmoChanged?.Invoke(_inMag, CurrentReserve);
     }
 }
