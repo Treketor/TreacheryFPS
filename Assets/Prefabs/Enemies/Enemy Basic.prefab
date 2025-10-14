@@ -281,7 +281,7 @@ NavMeshAgent:
   m_Acceleration: 0
   avoidancePriority: 50
   m_AngularSpeed: 0
-  m_StoppingDistance: 2
+  m_StoppingDistance: 0
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 0
   m_AutoRepath: 1
@@ -302,6 +302,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
   maxHealth: 50
+  soulPickupPrefab: {fileID: 398041584917184814, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
+  soulsToDropMin: 1
+  soulsToDropMax: 3
 --- !u!114 &4358988134128468475
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -317,6 +320,8 @@ MonoBehaviour:
   meleeRange: 1.6
   meleeDamage: 10
   attackCooldown: 1
+  attackStopDuration: 0.5
+  attackRotationSpeed: 720
 --- !u!114 &7845276893598869776
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -334,9 +339,12 @@ MonoBehaviour:
   rotationSpeed: 999
   slowdownDistance: 3
   minSpeed: 0.8
-  separationRadius: 2
+  separationRadius: 3
   separationStrength: 2
   zombieLayer:
     serializedVersion: 2
     m_Bits: 64
-  stoppingDistance: 2
+  attackCircleRadius: 1.5
+  circlePositionStrength: 1.5
+  circleActivationDistance: 4
+  stoppingDistance: 1.4
