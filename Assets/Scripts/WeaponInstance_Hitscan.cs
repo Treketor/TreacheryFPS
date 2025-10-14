@@ -12,12 +12,16 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public float reloadTime = 1.2f;
     public float spread = 1.5f;
 
+    [Header("Ammo Pools")]
+    public int startingReserve = 60;
+
     [Header("References")]
     public WeaponRaycaster raycaster;
     public LayerMask hitMask;
 
     float _cooldown;
     int _inMag;
+    int _reserve;
     bool _reloading;
 
     public System.Action<int, int> OnAmmoChanged;
@@ -26,11 +30,12 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public string DisplayName => displayName;
     public string TierName => tierName;
     public int CurrentMag => _inMag;
-    public int CurrentReserve => 9999; // infinite reserve for now
+    public int CurrentReserve => _reserve;
 
     void Awake()
     {
         _inMag = magSize;
+        _reserve = Mathf.Max(0, startingReserve);
     }
 
     void Update()
@@ -41,9 +46,10 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public void TryFire()
     {
         if (_reloading || _cooldown > 0f || _inMag <= 0) return;
+
         _cooldown = 1f / fireRate;
         _inMag--;
-        OnAmmoChanged?.Invoke(_inMag, CurrentReserve);
+        OnAmmoChanged?.Invoke(_inMag, _reserve);
 
         if (raycaster.TryShoot(out var hit, spread))
         {
@@ -56,17 +62,26 @@ public class WeaponInstance_Hitscan : MonoBehaviour
 
     public void TryReload()
     {
-        if (_reloading || _inMag == magSize) return;
+        if (_reloading) return;
+        if (_inMag >= magSize) return; // already full
+        if (_reserve <= 0) return; // no reserve ammo
+
         StartCoroutine(ReloadCoroutine());
     }
 
     IEnumerator ReloadCoroutine()
     {
         _reloading = true;
+        // play reload animation/sound here
         yield return new WaitForSeconds(reloadTime);
-        _inMag = magSize;
+
+        int needed = magSize - _inMag;
+        int taken = Mathf.Min(needed, _reserve);
+        _inMag += taken;
+        _reserve -= taken;
+
         _reloading = false;
-        OnAmmoChanged?.Invoke(_inMag, CurrentReserve);
+        OnAmmoChanged?.Invoke(_inMag, _reserve);
     }
 
     public void ApplyTier(string newTierName, int newMagSize, float newDamage, float newReloadTime, float newSpread)
@@ -77,8 +92,14 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         reloadTime = newReloadTime;
         spread = newSpread;
 
-        _inMag = Mathf.Min(_inMag, magSize); // clamp if mag shrank
+        _inMag = Mathf.Min(_inMag, magSize);
         OnTierChanged?.Invoke(displayName, tierName);
-        OnAmmoChanged?.Invoke(_inMag, CurrentReserve);
+        OnAmmoChanged?.Invoke(_inMag, _reserve);
+    }
+
+    public void AddReserve(int amount)
+    {
+        _reserve = Mathf.Max(0, _reserve + amount);
+        OnAmmoChanged?.Invoke(_inMag, _reserve);
     }
 }
