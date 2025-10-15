@@ -73,11 +73,43 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         _inMag--;
         OnAmmoChanged?.Invoke(_inMag, _reserve);
 
+        // Register shot fired for accuracy tracking
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.RegisterShotFired();
+        }
+
         if (raycaster.TryShoot(out var hit, spread))
         {
-            if (hit.collider.TryGetComponent<IDamageable>(out var damageable))
-                damageable.TakeDamage(damage, hit.point, hit.normal);
-            // TODO: spawn impact FX at hit.point
+            bool isHeadshot = false;
+            float finalDamage = damage;
+
+            // Check for headshot zone first
+            if (hit.collider.TryGetComponent<HeadshotZone>(out var headshotZone))
+            {
+                isHeadshot = headshotZone.ProcessHeadshot(damage, hit.point, hit.normal, out finalDamage);
+                
+                // Register headshot for accuracy tracking
+                if (isHeadshot && ScoreManager.Instance != null)
+                {
+                    ScoreManager.Instance.RegisterHeadshot();
+                }
+            }
+            // Otherwise check for regular IDamageable on the hit object or its parent
+            else 
+            {
+                // Try to find IDamageable on hit object or parent hierarchy
+                IDamageable damageable = hit.collider.GetComponent<IDamageable>();
+                if (damageable == null)
+                    damageable = hit.collider.GetComponentInParent<IDamageable>();
+
+                if (damageable != null)
+                {
+                    damageable.TakeDamage(damage, hit.point, hit.normal);
+                }
+            }
+
+            // TODO: spawn impact FX at hit.point (different FX for headshot?)
         }
         // TODO: spawn muzzle flash FX and sound effect
     }

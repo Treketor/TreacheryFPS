@@ -5,6 +5,10 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     [Header("Health")]
     public float maxHealth = 50f;
     
+    [Header("Enemy Type")]
+    [Tooltip("Is this a boss enemy?")]
+    public bool isBoss = false;
+    
     [Header("Soul Drop")]
     [Tooltip("Prefab to spawn when enemy dies")]
     public GameObject soulPickupPrefab;
@@ -14,6 +18,7 @@ public class EnemyHealth : MonoBehaviour, IDamageable
 
     public System.Action<EnemyHealth> OnDeath;
     float _hp;
+    bool _killedByHeadshot = false; // Track if killed by headshot
 
     void Awake() { _hp = maxHealth; }
 
@@ -25,8 +30,25 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         if (_hp <= 0f)
         {
             OnDeath?.Invoke(this);
+            RegisterKillInScoreSystem();
             SpawnSouls();
             Destroy(gameObject);
+        }
+    }
+
+    /// <summary>
+    /// Called by HeadshotZone to mark that this enemy was hit in the head.
+    /// </summary>
+    public void MarkAsHeadshot()
+    {
+        _killedByHeadshot = true;
+    }
+
+    void RegisterKillInScoreSystem()
+    {
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.RegisterKill(_killedByHeadshot, isBoss);
         }
     }
 

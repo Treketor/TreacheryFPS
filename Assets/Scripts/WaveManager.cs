@@ -88,6 +88,12 @@ public class WaveManager : MonoBehaviour
                 yield return null;
             }
 
+            // Wave complete - register with score system
+            if (ScoreManager.Instance != null)
+            {
+                ScoreManager.Instance.RegisterWaveComplete(currentWaveIndex);
+            }
+
             currentWaveIndex++;
             CurrentWaveIndex = currentWaveIndex;
             OnWaveChanged?.Invoke(CurrentWaveIndex);

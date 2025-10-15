@@ -23,7 +23,8 @@ public class WeaponRaycaster : MonoBehaviour
             dir = (transform.forward + transform.right * r.x + transform.up * r.y).normalized;
         }
 
-        return Physics.Raycast(transform.position, dir, out hit, maxRange, _effectiveMask, QueryTriggerInteraction.Ignore);
+        // Use QueryTriggerInteraction.Collide to detect headshot zones (which are triggers)
+        return Physics.Raycast(transform.position, dir, out hit, maxRange, _effectiveMask, QueryTriggerInteraction.Collide);
     }
 
     // Call this if you change the layer masks at runtime
