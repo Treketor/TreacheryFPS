@@ -66,4 +66,12 @@ public class WeaponController : MonoBehaviour
         OnWeaponChanged?.Invoke(displayName, tierName);
         OnAmmoChanged?.Invoke(CurrentAmmoInMag, CurrentReserveAmmo);
     }
+
+    /// <summary>
+    /// Get the currently equipped weapon.
+    /// </summary>
+    public WeaponInstance_Hitscan GetCurrentWeapon()
+    {
+        return currentWeapon;
+    }
 }

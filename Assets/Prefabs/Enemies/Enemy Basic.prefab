@@ -317,11 +317,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb2fde5383e205843a560c2f129297aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyController
-  meleeRange: 1.6
+  meleeRange: 1.5
   meleeDamage: 10
   attackCooldown: 1
   attackStopDuration: 0.5
-  attackRotationSpeed: 720
+  attackRotationSpeed: 999
 --- !u!114 &7845276893598869776
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -337,14 +337,14 @@ MonoBehaviour:
   player: {fileID: 0}
   walkSpeed: 5
   rotationSpeed: 999
-  slowdownDistance: 3
+  slowdownDistance: 4
   minSpeed: 0.8
   separationRadius: 3
   separationStrength: 2
   zombieLayer:
     serializedVersion: 2
     m_Bits: 64
-  attackCircleRadius: 1.5
-  circlePositionStrength: 1.5
+  attackCircleRadius: 1.2
+  circlePositionStrength: 3
   circleActivationDistance: 4
   stoppingDistance: 1.4

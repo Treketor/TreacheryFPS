@@ -3,14 +3,30 @@ using UnityEngine;
 
 public class WeaponInstance_Hitscan : MonoBehaviour
 {
-    [Header("Stats")]
+    [Header("Base Stats")]
     public string displayName = "Pistol";
-    public string tierName = "Common";
-    public float damage = 20f;
-    public float fireRate = 5f; // shots per second
-    public int magSize = 12;
-    public float reloadTime = 1.2f;
-    public float spread = 1.5f;
+    
+    [Header("Base Stats (These get multiplied by tier)")]
+    [Tooltip("Base damage per shot")]
+    public float baseDamage = 20f;
+    [Tooltip("Base fire rate (shots per second)")]
+    public float baseFireRate = 5f;
+    [Tooltip("Base magazine size")]
+    public int baseMagSize = 12;
+    [Tooltip("Base reload time in seconds")]
+    public float baseReloadTime = 1.2f;
+    [Tooltip("Base spread/accuracy")]
+    public float baseSpread = 1.5f;
+    
+    [Header("Current Tier")]
+    [SerializeField] WeaponTier currentTier = WeaponTier.Common;
+    
+    // Current stats (calculated from base * tier multipliers)
+    float damage;
+    float fireRate;
+    int magSize;
+    float reloadTime;
+    float spread;
 
     [Header("Ammo Pools")]
     public int startingReserve = 60;
@@ -26,14 +42,20 @@ public class WeaponInstance_Hitscan : MonoBehaviour
 
     public System.Action<int, int> OnAmmoChanged;
     public System.Action<string, string> OnTierChanged;
+    public System.Action<WeaponTier> OnTierUpgraded;
 
     public string DisplayName => displayName;
-    public string TierName => tierName;
+    public string TierName => WeaponTierSystem.GetTierData(currentTier).tierName;
+    public WeaponTier CurrentTier => currentTier;
     public int CurrentMag => _inMag;
     public int CurrentReserve => _reserve;
+    public float CurrentDamage => damage;
+    public float CurrentFireRate => fireRate;
 
     void Awake()
     {
+        // Calculate initial stats based on tier
+        RecalculateStats();
         _inMag = magSize;
         _reserve = Mathf.Max(0, startingReserve);
     }
@@ -84,16 +106,75 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         OnAmmoChanged?.Invoke(_inMag, _reserve);
     }
 
+    /// <summary>
+    /// Recalculate all stats based on current tier.
+    /// </summary>
+    void RecalculateStats()
+    {
+        WeaponTierData tierData = WeaponTierSystem.GetTierData(currentTier);
+        
+        damage = baseDamage * tierData.damageMultiplier;
+        fireRate = baseFireRate * tierData.fireRateMultiplier;
+        magSize = Mathf.RoundToInt(baseMagSize * tierData.magSizeMultiplier);
+        reloadTime = baseReloadTime * tierData.reloadTimeMultiplier;
+        spread = baseSpread * tierData.spreadMultiplier;
+    }
+
+    /// <summary>
+    /// Upgrade weapon to the next tier.
+    /// </summary>
+    public bool TryUpgradeTier()
+    {
+        if (!WeaponTierSystem.CanUpgrade(currentTier))
+        {
+            Debug.Log($"{displayName} is already at max tier (Legendary)!");
+            return false;
+        }
+
+        WeaponTier? nextTier = WeaponTierSystem.GetNextTier(currentTier);
+        if (nextTier.HasValue)
+        {
+            currentTier = nextTier.Value;
+            RecalculateStats();
+            
+            // Refill magazine on upgrade
+            _inMag = magSize;
+            
+            OnTierChanged?.Invoke(displayName, TierName);
+            OnTierUpgraded?.Invoke(currentTier);
+            OnAmmoChanged?.Invoke(_inMag, _reserve);
+            
+            Debug.Log($"{displayName} upgraded to {TierName}!");
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Get the cost to upgrade this weapon to the next tier.
+    /// </summary>
+    public int GetUpgradeCost()
+    {
+        return WeaponTierSystem.GetUpgradeCost(currentTier);
+    }
+
+    /// <summary>
+    /// Check if this weapon can be upgraded.
+    /// </summary>
+    public bool CanUpgrade()
+    {
+        return WeaponTierSystem.CanUpgrade(currentTier);
+    }
+
+    // Legacy method for compatibility (deprecated)
+    [System.Obsolete("Use TryUpgradeTier() instead")]
     public void ApplyTier(string newTierName, int newMagSize, float newDamage, float newReloadTime, float newSpread)
     {
-        tierName = newTierName;
-        magSize = newMagSize;
-        damage = newDamage;
-        reloadTime = newReloadTime;
-        spread = newSpread;
-
+        currentTier = WeaponTierSystem.ParseTierName(newTierName);
+        RecalculateStats();
         _inMag = Mathf.Min(_inMag, magSize);
-        OnTierChanged?.Invoke(displayName, tierName);
+        OnTierChanged?.Invoke(displayName, TierName);
         OnAmmoChanged?.Invoke(_inMag, _reserve);
     }
 
