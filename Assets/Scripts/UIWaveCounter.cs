@@ -30,6 +30,6 @@ public class UIWaveCounter : MonoBehaviour
 
     void HandleWaveChanged(int waveIndex)
     {
-        waveText.text = $"{waveIndex + 1}";
+        waveText.text = $"Wave {waveIndex + 1}";
     }
 }

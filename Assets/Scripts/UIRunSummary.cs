@@ -27,14 +27,51 @@ public class UIRunSummary : MonoBehaviour
     [SerializeField] bool animateNumbers = true;
     [SerializeField] float numberAnimationDuration = 1f;
 
+    [Header("Auto-Connect")]
+    [SerializeField] PlayerHealth playerHealth;
+    [SerializeField] bool autoFindPlayer = true;
+
     void Start()
     {
+        Debug.Log("UIRunSummary: Start() called");
+        
         // Hide panel initially
         if (summaryPanel)
             summaryPanel.SetActive(false);
+        else
+            Debug.LogWarning("UIRunSummary: Summary Panel reference is missing!");
+
+        // Auto-find player if not assigned
+        if (autoFindPlayer && !playerHealth)
+        {
+            playerHealth = FindFirstObjectByType<PlayerHealth>();
+            if (playerHealth)
+                Debug.Log("UIRunSummary: Auto-found PlayerHealth");
+        }
 
         // Subscribe to player death event
-        // You'll need to hook this up to your PlayerHealth OnDeath event
+        if (playerHealth)
+        {
+            playerHealth.OnDeath.AddListener(OnPlayerDeath);
+            Debug.Log("UIRunSummary: Successfully subscribed to PlayerHealth.OnDeath event");
+        }
+        else
+        {
+            Debug.LogWarning("UIRunSummary: PlayerHealth not found! Run summary won't show on death.");
+        }
+    }
+
+    void OnDestroy()
+    {
+        // Unsubscribe from events
+        if (playerHealth)
+            playerHealth.OnDeath.RemoveListener(OnPlayerDeath);
+    }
+
+    void OnPlayerDeath()
+    {
+        Debug.Log("UIRunSummary: OnPlayerDeath() called - showing summary");
+        ShowSummary(false); // false = player died (not successful completion)
     }
 
     /// <summary>
@@ -42,9 +79,23 @@ public class UIRunSummary : MonoBehaviour
     /// </summary>
     public void ShowSummary(bool wasSuccessful = false)
     {
+        Debug.Log($"UIRunSummary: ShowSummary() called with wasSuccessful={wasSuccessful}");
+        
         if (ScoreManager.Instance == null)
         {
             Debug.LogWarning("UIRunSummary: ScoreManager not found!");
+            return;
+        }
+
+        // Activate panel FIRST so coroutines can run
+        if (summaryPanel)
+        {
+            summaryPanel.SetActive(true);
+            Debug.Log("UIRunSummary: Summary panel activated");
+        }
+        else
+        {
+            Debug.LogError("UIRunSummary: Cannot show summary - summaryPanel is null!");
             return;
         }
 
@@ -56,9 +107,6 @@ public class UIRunSummary : MonoBehaviour
         yield return new WaitForSeconds(delayBeforeShow);
 
         RunSummary summary = ScoreManager.Instance.GetRunSummary();
-
-        if (summaryPanel)
-            summaryPanel.SetActive(true);
 
         // Set title
         if (titleText)

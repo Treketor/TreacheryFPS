@@ -11,8 +11,8 @@ public class UIScoreDisplay : MonoBehaviour
     [SerializeField] TextMeshProUGUI scoreText;
 
     [Header("Display Format")]
-    [SerializeField] string prefix = "Score: ";
-    [SerializeField] bool useThousandsSeparator = true;
+    [SerializeField] string prefix = "";
+    [SerializeField] int arcadeDigits = 6; // Number of digits to display (e.g., 6 = 000000)
 
     [Header("Visual Feedback")]
     [SerializeField] bool pulseOnScoreGain = true;
@@ -88,9 +88,8 @@ public class UIScoreDisplay : MonoBehaviour
     {
         if (!scoreText) return;
 
-        string formattedNumber = useThousandsSeparator 
-            ? score.ToString("N0") 
-            : score.ToString();
+        // Format as arcade-style with leading zeros (e.g., 000000, 000150, 012345)
+        string formattedNumber = score.ToString($"D{arcadeDigits}");
 
         scoreText.text = $"{prefix}{formattedNumber}";
     }

@@ -5,7 +5,8 @@ public class UIAmmoWidget : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] TMP_Text ammoText;
-    [SerializeField] TMP_Text weaponNameTierText;
+    [SerializeField] TMP_Text weaponNameText;
+    [SerializeField] TMP_Text weaponTierText;
 
     [Header("Sources")]
     [SerializeField] WeaponController weaponController;
@@ -62,7 +63,7 @@ public class UIAmmoWidget : MonoBehaviour
 
     void HandleAmmoChanged(int inMag, int reserve)
     {
-        ammoText.text = (reserve >= 0) ? $"{inMag} / {reserve}" : $"{inMag}";
+        ammoText.text = (reserve >= 0) ? $"{inMag}/{reserve}" : $"{inMag}";
         _isLow = inMag <= lowAmmoThreshold;
         
         // Update color: low ammo = red, normal ammo = current tier color
@@ -74,7 +75,19 @@ public class UIAmmoWidget : MonoBehaviour
         var c = TierColorUtility.GetColor(tierName);
         string hex = TierColorUtility.ToHex(c);
 
-        weaponNameTierText.text = $"{displayName}  <size=80%><color=#{hex}>({tierName})</color></size>";
+        // Set weapon name
+        if (weaponNameText)
+        {
+            weaponNameText.text = $"{displayName.ToUpper()}";
+            weaponNameText.color = c;
+        }
+
+        // Set tier with color
+        if (weaponTierText)
+        {
+            weaponTierText.text = $"({tierName.ToUpper()})";
+            weaponTierText.color = c;
+        }
 
         // Store the tier color and apply it if not currently in low ammo state
         _currentTierColor = c;

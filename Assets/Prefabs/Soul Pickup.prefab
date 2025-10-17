@@ -73,8 +73,8 @@ MonoBehaviour:
   ejectionGravity: 7.5
   ejectionDamping: 3
   attractionDelay: 0
-  attractionSpeed: 6
-  attractionAcceleration: 3
+  attractionSpeed: 12
+  attractionAcceleration: 6
   playerLayer:
     serializedVersion: 2
     m_Bits: 8

@@ -79,6 +79,7 @@ public class PlayerHealth : MonoBehaviour
 
     void Die()
     {
+        Debug.Log("PlayerHealth: Die() called - invoking OnDeath event");
         IsDead = true;
         OnDeath?.Invoke();
         BroadcastHealth();

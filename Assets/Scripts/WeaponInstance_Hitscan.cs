@@ -58,6 +58,12 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         RecalculateStats();
         _inMag = magSize;
         _reserve = Mathf.Max(0, startingReserve);
+
+        // Validate raycaster reference
+        if (raycaster == null)
+        {
+            Debug.LogError($"WeaponInstance_Hitscan ({displayName}): Raycaster is not assigned! Weapon will not be able to shoot.", this);
+        }
     }
 
     void Update()
@@ -67,7 +73,14 @@ public class WeaponInstance_Hitscan : MonoBehaviour
 
     public void TryFire()
     {
-        if (_reloading || _cooldown > 0f || _inMag <= 0) return;
+        if (_reloading || _cooldown > 0f) return;
+
+        // Auto-reload if magazine is empty
+        if (_inMag <= 0)
+        {
+            TryReload();
+            return;
+        }
 
         _cooldown = 1f / fireRate;
         _inMag--;
@@ -77,6 +90,13 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         if (ScoreManager.Instance != null)
         {
             ScoreManager.Instance.RegisterShotFired();
+        }
+
+        // Check if raycaster is assigned
+        if (raycaster == null)
+        {
+            Debug.LogError($"WeaponInstance_Hitscan ({displayName}): Cannot shoot - raycaster is null!", this);
+            return;
         }
 
         if (raycaster.TryShoot(out var hit, spread))

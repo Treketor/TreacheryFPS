@@ -3,6 +3,7 @@ using TMPro;
 
 /// <summary>
 /// UI component that displays detailed combat statistics (kills, headshots, etc.)
+/// DISABLED - Script is inactive and will not display stats
 /// </summary>
 public class UIStatsDisplay : MonoBehaviour
 {
@@ -16,6 +17,9 @@ public class UIStatsDisplay : MonoBehaviour
     [SerializeField] string headshotsFormat = "Headshots: {0}";
     [SerializeField] string accuracyFormat = "Accuracy: {0:F1}%";
 
+    // Script disabled - uncomment methods below to re-enable
+
+    /*
     void Start()
     {
         // Subscribe to score manager events
@@ -64,4 +68,5 @@ public class UIStatsDisplay : MonoBehaviour
             accuracyText.text = string.Format(accuracyFormat, accuracy);
         }
     }
+    */
 }

@@ -93,7 +93,13 @@ public class SoulManager : MonoBehaviour
 
 #if UNITY_EDITOR
     [ContextMenu("Debug: Add 100 Souls")]
-    void DebugAddSouls() => AddSouls(100);
+    void DebugAdd100Souls() => AddSouls(100);
+
+    [ContextMenu("Debug: Add 500 Souls")]
+    void DebugAdd500Souls() => AddSouls(500);
+
+    [ContextMenu("Debug: Add 1000 Souls")]
+    void DebugAdd1000Souls() => AddSouls(1000);
 
     [ContextMenu("Debug: Spend 50 Souls")]
     void DebugSpendSouls() => TrySpendSouls(50);

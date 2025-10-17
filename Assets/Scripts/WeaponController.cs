@@ -14,6 +14,8 @@ public class WeaponController : MonoBehaviour
     public string CurrentTierName => currentWeapon ? currentWeapon.TierName : "—";
 
     [SerializeField] InputActionAsset playerInput;
+    [SerializeField] bool autoFindWeapon = true;
+    
     InputAction _attackAction;
     InputAction _reloadAction;
 
@@ -23,9 +25,58 @@ public class WeaponController : MonoBehaviour
         {
             _attackAction = playerInput.FindAction("Attack");
             _reloadAction = playerInput.FindAction("Reload");
+            
+            if (_attackAction == null)
+                Debug.LogWarning("WeaponController: Attack action not found in InputActionAsset!");
+            if (_reloadAction == null)
+                Debug.LogWarning("WeaponController: Reload action not found in InputActionAsset!");
+        }
+        else
+        {
+            Debug.LogWarning("WeaponController: No InputActionAsset assigned!");
         }
 
-        if (currentWeapon) SubscribeWeapon(currentWeapon);
+        // Auto-find weapon if not assigned
+        if (!currentWeapon && autoFindWeapon)
+        {
+            currentWeapon = GetComponentInChildren<WeaponInstance_Hitscan>();
+            if (currentWeapon)
+                Debug.Log($"WeaponController: Auto-found weapon '{currentWeapon.DisplayName}' in children");
+        }
+
+        if (currentWeapon)
+        {
+            SubscribeWeapon(currentWeapon);
+            Debug.Log($"WeaponController: Current weapon set to {currentWeapon.DisplayName}");
+        }
+        else
+        {
+            Debug.LogWarning("WeaponController: No weapon assigned to currentWeapon field and none found in children!");
+        }
+    }
+
+    void OnEnable()
+    {
+        // Enable input actions when this component is enabled
+        if (playerInput != null)
+        {
+            playerInput.Enable();
+        }
+        
+        _attackAction?.Enable();
+        _reloadAction?.Enable();
+    }
+
+    void OnDisable()
+    {
+        // Disable input actions when this component is disabled
+        _attackAction?.Disable();
+        _reloadAction?.Disable();
+        
+        if (playerInput != null)
+        {
+            playerInput.Disable();
+        }
     }
 
     void Update()
