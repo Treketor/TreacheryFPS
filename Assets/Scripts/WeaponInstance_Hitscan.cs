@@ -35,6 +35,12 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public WeaponRaycaster raycaster;
     public LayerMask hitMask;
 
+    [Header("Animation")]
+    [SerializeField] Animator animator;
+    [SerializeField] string shootTriggerName = "Shoot";
+    [SerializeField] string reloadTriggerName = "Reload";
+    [SerializeField] bool autoFindAnimator = true;
+
     float _cooldown;
     int _inMag;
     int _reserve;
@@ -58,6 +64,14 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         RecalculateStats();
         _inMag = magSize;
         _reserve = Mathf.Max(0, startingReserve);
+
+        // Auto-find animator if not assigned
+        if (!animator && autoFindAnimator)
+        {
+            animator = GetComponentInChildren<Animator>();
+            if (animator)
+                Debug.Log($"WeaponInstance_Hitscan ({displayName}): Auto-found Animator in children");
+        }
 
         // Validate raycaster reference
         if (raycaster == null)
@@ -85,6 +99,12 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         _cooldown = 1f / fireRate;
         _inMag--;
         OnAmmoChanged?.Invoke(_inMag, _reserve);
+
+        // Trigger shoot animation
+        if (animator != null && !string.IsNullOrEmpty(shootTriggerName))
+        {
+            animator.SetTrigger(shootTriggerName);
+        }
 
         // Register shot fired for accuracy tracking
         if (ScoreManager.Instance != null)
@@ -146,7 +166,13 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     IEnumerator ReloadCoroutine()
     {
         _reloading = true;
-        // play reload animation/sound here
+        
+        // Trigger reload animation
+        if (animator != null && !string.IsNullOrEmpty(reloadTriggerName))
+        {
+            animator.SetTrigger(reloadTriggerName);
+        }
+        
         yield return new WaitForSeconds(reloadTime);
 
         int needed = magSize - _inMag;
