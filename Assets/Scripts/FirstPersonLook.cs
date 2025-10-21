@@ -12,6 +12,10 @@ public class FirstPersonLook : MonoBehaviour
     [SerializeField] private InputActionAsset playerInput;
     private InputAction lookAction;
 
+    [Header("Recoil")]
+    [SerializeField] private WeaponRecoil weaponRecoil;
+    [SerializeField] private bool autoFindRecoil = true;
+
     private float rotationY = 0f;
 
     void Start()
@@ -21,6 +25,12 @@ public class FirstPersonLook : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        // Auto-find weapon recoil component
+        if (!weaponRecoil && autoFindRecoil)
+        {
+            weaponRecoil = FindFirstObjectByType<WeaponRecoil>();
+        }
     }
 
     void Update()
@@ -40,7 +50,18 @@ public class FirstPersonLook : MonoBehaviour
 
         if (cameraTransform != null)
         {
-            cameraTransform.localRotation = Quaternion.Euler(rotationY, 0f, 0f);
+            // Get recoil offset
+            Vector3 recoilOffset = weaponRecoil != null ? weaponRecoil.RecoilRotation : Vector3.zero;
+            
+            // Apply look rotation + recoil
+            // Recoil X is negative (kicks up), so add it to rotationY
+            // Recoil Y is horizontal offset
+            // Recoil Z is roll
+            cameraTransform.localRotation = Quaternion.Euler(
+                rotationY + recoilOffset.x,  // Pitch (vertical look + recoil)
+                recoilOffset.y,               // Yaw (recoil only, player body handles look)
+                recoilOffset.z                // Roll (recoil only)
+            );
         }
     }
 }

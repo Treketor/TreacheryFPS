@@ -4176,7 +4176,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90eefc60c360f8f4f99d73ba72a1869b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SoulManager
-  startingSouls: 0
+  startingSouls: 9999
 --- !u!4 &497915445
 Transform:
   m_ObjectHideFlags: 0
@@ -7252,9 +7252,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponInstance_Hitscan
   displayName: Pistol
   baseDamage: 5
-  baseFireRate: 5
+  baseFireRate: 3
   baseMagSize: 12
-  baseReloadTime: 2.2
+  baseReloadTime: 2.5
   baseSpread: 1.5
   currentTier: 0
   startingReserve: 9999
@@ -7262,10 +7262,18 @@ MonoBehaviour:
   hitMask:
     serializedVersion: 2
     m_Bits: 193
+  weaponRecoil: {fileID: 0}
+  recoilMultiplier: 2
+  autoFindRecoil: 1
   animator: {fileID: 1211848733}
   shootTriggerName: Shoot
   reloadTriggerName: Reload
+  currentAmmoParameterName: Current Ammo
   autoFindAnimator: 1
+  baseShootAnimationDuration: 0.2
+  baseFireRateForAnimation: 3
+  baseReloadAnimationDuration: 2
+  reloadDelayBuffer: 0.5
 --- !u!1 &800244890
 GameObject:
   m_ObjectHideFlags: 0
@@ -11885,9 +11893,10 @@ GameObject:
   - component: {fileID: 1267071167}
   - component: {fileID: 1267071166}
   - component: {fileID: 1267071169}
-  - component: {fileID: 1267071171}
   - component: {fileID: 1267071170}
+  - component: {fileID: 1267071171}
   - component: {fileID: 1267071172}
+  - component: {fileID: 1267071173}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -11979,6 +11988,8 @@ MonoBehaviour:
   sensitivity: 0.15
   cameraTransform: {fileID: 330585546}
   playerInput: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  weaponRecoil: {fileID: 0}
+  autoFindRecoil: 1
 --- !u!114 &1267071170
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12047,6 +12058,26 @@ MonoBehaviour:
   currentWeapon: {fileID: 0}
   playerInput: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   autoFindWeapon: 1
+--- !u!114 &1267071173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1267071165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f665cdf48e39af45ae7019ded6797d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponRecoil
+  recoilAmountX: 2
+  recoilAmountY: 0.75
+  recoilAmountZ: 0.2
+  recoilSpeed: 20
+  returnSpeed: 5
+  randomnessAmount: 0.5
+  useSnappyRecoil: 0
+  snapAmount: 0.8
 --- !u!1 &1292480443
 GameObject:
   m_ObjectHideFlags: 0
