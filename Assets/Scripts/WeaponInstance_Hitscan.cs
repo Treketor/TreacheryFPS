@@ -40,6 +40,10 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [SerializeField] float recoilMultiplier = 1f;
     [SerializeField] bool autoFindRecoil = true;
 
+    [Header("Muzzle Flash")]
+    [SerializeField] GameObject muzzleFlashObject;
+    [SerializeField] float muzzleFlashDuration = 0.05f;
+
     [Header("Animation")]
     [SerializeField] Animator animator;
     [SerializeField] string shootTriggerName = "Shoot";
@@ -95,6 +99,12 @@ public class WeaponInstance_Hitscan : MonoBehaviour
             weaponRecoil = FindFirstObjectByType<WeaponRecoil>();
             if (weaponRecoil)
                 Debug.Log($"WeaponInstance_Hitscan ({displayName}): Auto-found WeaponRecoil component");
+        }
+
+        // Make sure muzzle flash starts disabled
+        if (muzzleFlashObject != null)
+        {
+            muzzleFlashObject.SetActive(false);
         }
 
         // Validate raycaster reference
@@ -165,6 +175,12 @@ public class WeaponInstance_Hitscan : MonoBehaviour
             weaponRecoil.ApplyRecoil(recoilMultiplier);
         }
 
+        // Trigger muzzle flash
+        if (muzzleFlashObject != null)
+        {
+            StartCoroutine(ShowMuzzleFlash());
+        }
+
         // Register shot fired for accuracy tracking
         if (ScoreManager.Instance != null)
         {
@@ -210,7 +226,18 @@ public class WeaponInstance_Hitscan : MonoBehaviour
 
             // TODO: spawn impact FX at hit.point (different FX for headshot?)
         }
-        // TODO: spawn muzzle flash FX and sound effect
+    }
+
+    IEnumerator ShowMuzzleFlash()
+    {
+        // Activate muzzle flash
+        muzzleFlashObject.SetActive(true);
+        
+        // Wait for brief duration
+        yield return new WaitForSeconds(muzzleFlashDuration);
+        
+        // Deactivate muzzle flash
+        muzzleFlashObject.SetActive(false);
     }
 
     IEnumerator ResetAnimatorSpeedAfterShoot(float delay)
