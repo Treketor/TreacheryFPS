@@ -3,21 +3,36 @@ using UnityEngine.InputSystem;
 
 public class WeaponController : MonoBehaviour
 {
-    public WeaponInstance_Hitscan currentWeapon;
+    [Header("Weapon Slots")]
+    [SerializeField] WeaponInstance_Hitscan[] weaponSlots = new WeaponInstance_Hitscan[2];
+    [SerializeField] int activeWeaponIndex = 0;
 
     public System.Action<int, int> OnAmmoChanged; // in-mag, reserve
     public System.Action<string, string> OnWeaponChanged; // display name, tier name
+    public System.Action<int, int> OnWeaponSlotChanged; // current slot, total slots
 
-    public int CurrentAmmoInMag => currentWeapon ? currentWeapon.CurrentMag : 0;
-    public int CurrentReserveAmmo => currentWeapon ? currentWeapon.CurrentReserve : -1;
-    public string CurrentWeaponDisplayName => currentWeapon ? currentWeapon.DisplayName : "—";
-    public string CurrentTierName => currentWeapon ? currentWeapon.TierName : "—";
+    // Properties for current active weapon
+    public WeaponInstance_Hitscan CurrentWeapon => (activeWeaponIndex >= 0 && activeWeaponIndex < weaponSlots.Length) ? weaponSlots[activeWeaponIndex] : null;
+    public int CurrentAmmoInMag => CurrentWeapon ? CurrentWeapon.CurrentMag : 0;
+    public int CurrentReserveAmmo => CurrentWeapon ? CurrentWeapon.CurrentReserve : -1;
+    public string CurrentWeaponDisplayName => CurrentWeapon ? CurrentWeapon.DisplayName : "—";
+    public string CurrentTierName => CurrentWeapon ? CurrentWeapon.TierName : "—";
+    public int ActiveWeaponIndex => activeWeaponIndex;
+    public int WeaponSlotCount => weaponSlots.Length;
+    public bool IsSwitching => _isSwitching;
 
+    [Header("Input")]
     [SerializeField] InputActionAsset playerInput;
-    [SerializeField] bool autoFindWeapon = true;
+    [SerializeField] bool autoFindWeapons = true;
+    
+    [Header("Weapon Switching")]
+    [SerializeField] bool allowSwitchDuringReload = true;
+    
+    private bool _isSwitching = false;
     
     InputAction _attackAction;
     InputAction _reloadAction;
+    InputAction _switchWeaponAction;
 
     void Awake()
     {
@@ -25,34 +40,36 @@ public class WeaponController : MonoBehaviour
         {
             _attackAction = playerInput.FindAction("Attack");
             _reloadAction = playerInput.FindAction("Reload");
+            _switchWeaponAction = playerInput.FindAction("SwitchWeapon");
             
             if (_attackAction == null)
                 Debug.LogWarning("WeaponController: Attack action not found in InputActionAsset!");
             if (_reloadAction == null)
                 Debug.LogWarning("WeaponController: Reload action not found in InputActionAsset!");
+            if (_switchWeaponAction == null)
+                Debug.LogWarning("WeaponController: SwitchWeapon action not found in InputActionAsset!");
         }
         else
         {
             Debug.LogWarning("WeaponController: No InputActionAsset assigned!");
         }
 
-        // Auto-find weapon if not assigned
-        if (!currentWeapon && autoFindWeapon)
+        // Auto-find weapons if slots are empty
+        if (autoFindWeapons)
         {
-            currentWeapon = GetComponentInChildren<WeaponInstance_Hitscan>();
-            if (currentWeapon)
-                Debug.Log($"WeaponController: Auto-found weapon '{currentWeapon.DisplayName}' in children");
+            var foundWeapons = GetComponentsInChildren<WeaponInstance_Hitscan>();
+            for (int i = 0; i < Mathf.Min(foundWeapons.Length, weaponSlots.Length); i++)
+            {
+                if (weaponSlots[i] == null)
+                {
+                    weaponSlots[i] = foundWeapons[i];
+                    Debug.Log($"WeaponController: Auto-found weapon '{foundWeapons[i].DisplayName}' for slot {i}");
+                }
+            }
         }
 
-        if (currentWeapon)
-        {
-            SubscribeWeapon(currentWeapon);
-            Debug.Log($"WeaponController: Current weapon set to {currentWeapon.DisplayName}");
-        }
-        else
-        {
-            Debug.LogWarning("WeaponController: No weapon assigned to currentWeapon field and none found in children!");
-        }
+        // Initialize weapon slots
+        InitializeWeapons();
     }
 
     void OnEnable()
@@ -81,22 +98,149 @@ public class WeaponController : MonoBehaviour
 
     void Update()
     {
-        if (!currentWeapon) return;
+        if (CurrentWeapon == null) return;
 
         if (_attackAction != null && _attackAction.IsPressed())
-            currentWeapon.TryFire();
+            CurrentWeapon.TryFire();
 
         if (_reloadAction != null && _reloadAction.WasPressedThisFrame())
-            currentWeapon.TryReload();
+            CurrentWeapon.TryReload();
+
+        if (_switchWeaponAction != null && _switchWeaponAction.WasPressedThisFrame())
+            SwitchToNextWeapon();
     }
 
-    public void SetCurrentWeapon(WeaponInstance_Hitscan newWpn)
+    void InitializeWeapons()
     {
-        if (currentWeapon) UnsubscribeWeapon(currentWeapon);
-        currentWeapon = newWpn;
-        if (currentWeapon) SubscribeWeapon(currentWeapon);
+        // Hide all weapons initially
+        for (int i = 0; i < weaponSlots.Length; i++)
+        {
+            if (weaponSlots[i] != null)
+            {
+                weaponSlots[i].gameObject.SetActive(false);
+            }
+        }
+
+        // Find first available weapon and set as active (no delay on initialization)
+        for (int i = 0; i < weaponSlots.Length; i++)
+        {
+            if (weaponSlots[i] != null)
+            {
+                SwitchToWeapon(i, false); // false = no switch delay on first weapon
+                break;
+            }
+        }
+    }
+
+    public void SwitchToWeapon(int weaponIndex, bool applySwitchDelay = true)
+    {
+        if (weaponIndex < 0 || weaponIndex >= weaponSlots.Length || weaponSlots[weaponIndex] == null)
+            return;
+
+        // Prevent switching if already switching or if current weapon index is the same
+        if (_isSwitching || weaponIndex == activeWeaponIndex)
+            return;
+
+        // Check if switching during reload is allowed
+        if (!allowSwitchDuringReload && CurrentWeapon != null && CurrentWeapon.IsReloading)
+        {
+            Debug.Log("Cannot switch weapons while reloading");
+            return;
+        }
+
+        // Start the switch coroutine
+        StartCoroutine(SwitchWeaponCoroutine(weaponIndex, applySwitchDelay));
+    }
+
+    private System.Collections.IEnumerator SwitchWeaponCoroutine(int weaponIndex, bool applySwitchDelay)
+    {
+        _isSwitching = true;
+
+        // If we have a current weapon, trigger its switch-out animation first
+        if (CurrentWeapon != null)
+        {
+            // Cancel reload if weapon is currently reloading
+            if (CurrentWeapon.IsReloading && allowSwitchDuringReload)
+            {
+                CurrentWeapon.CancelReload();
+                Debug.Log($"Cancelled reload on {CurrentWeapon.DisplayName} due to weapon switch");
+            }
+
+            // Trigger switch-out animation and wait for it
+            float switchOutDelay = CurrentWeapon.TriggerSwitchOutAnimation();
+            yield return new WaitForSeconds(switchOutDelay);
+
+            UnsubscribeWeapon(CurrentWeapon);
+            CurrentWeapon.gameObject.SetActive(false);
+        }
+
+        // Switch to new weapon
+        activeWeaponIndex = weaponIndex;
+        CurrentWeapon.gameObject.SetActive(true);
+        SubscribeWeapon(CurrentWeapon);
+
+        // Start switch delay on newly activated weapon (if enabled)
+        if (applySwitchDelay)
+        {
+            CurrentWeapon.OnWeaponActivated();
+        }
+
+        // Notify UI
         OnWeaponChanged?.Invoke(CurrentWeaponDisplayName, CurrentTierName);
         OnAmmoChanged?.Invoke(CurrentAmmoInMag, CurrentReserveAmmo);
+        OnWeaponSlotChanged?.Invoke(activeWeaponIndex, weaponSlots.Length);
+
+        Debug.Log($"Switched to weapon slot {weaponIndex}: {CurrentWeaponDisplayName}");
+
+        _isSwitching = false;
+    }
+
+    public void SwitchToNextWeapon()
+    {
+        // Find next available weapon slot
+        int startIndex = activeWeaponIndex;
+        int nextIndex = (activeWeaponIndex + 1) % weaponSlots.Length;
+        
+        while (nextIndex != startIndex)
+        {
+            if (weaponSlots[nextIndex] != null)
+            {
+                SwitchToWeapon(nextIndex);
+                return;
+            }
+            nextIndex = (nextIndex + 1) % weaponSlots.Length;
+        }
+    }
+
+    public void AddWeaponToSlot(WeaponInstance_Hitscan weapon, int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= weaponSlots.Length)
+            return;
+
+        weaponSlots[slotIndex] = weapon;
+        weapon.gameObject.SetActive(false); // Hide by default
+
+        Debug.Log($"Added weapon '{weapon.DisplayName}' to slot {slotIndex}");
+    }
+
+    public WeaponInstance_Hitscan GetWeaponInSlot(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= weaponSlots.Length)
+            return null;
+
+        return weaponSlots[slotIndex];
+    }
+
+    public bool HasWeaponInSlot(int slotIndex)
+    {
+        return GetWeaponInSlot(slotIndex) != null;
+    }
+
+    // Legacy method for compatibility (now sets weapon in slot 0)
+    public void SetCurrentWeapon(WeaponInstance_Hitscan newWpn)
+    {
+        AddWeaponToSlot(newWpn, 0);
+        SwitchToWeapon(0);
     }
 
     void SubscribeWeapon(WeaponInstance_Hitscan w)
@@ -123,6 +267,6 @@ public class WeaponController : MonoBehaviour
     /// </summary>
     public WeaponInstance_Hitscan GetCurrentWeapon()
     {
-        return currentWeapon;
+        return CurrentWeapon;
     }
 }

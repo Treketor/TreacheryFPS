@@ -48,6 +48,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [SerializeField] Animator animator;
     [SerializeField] string shootTriggerName = "Shoot";
     [SerializeField] string reloadTriggerName = "Reload";
+    [SerializeField] string switchOutTriggerName = "Switch Out";
     [SerializeField] string currentAmmoParameterName = "Current Ammo";
     [SerializeField] bool autoFindAnimator = true;
     
@@ -60,8 +61,15 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [SerializeField] float baseReloadAnimationDuration = 2.0f;
     [Tooltip("Extra time after animation completes before weapon is ready (in seconds)")]
     [SerializeField] float reloadDelayBuffer = 0.5f;
+    
+    [Header("Weapon Switch Timing")]
+    [SerializeField] float weaponSwitchDelay = 0.3f;
+    [Tooltip("Time after switching to this weapon before it can be used")]
+    [SerializeField] float switchOutAnimationDelay = 0.5f;
+    [Tooltip("Time to wait after triggering Switch Out animation before hiding weapon")]
 
     float _cooldown;
+    float _switchCooldown;
     int _inMag;
     int _reserve;
     bool _reloading;
@@ -77,6 +85,9 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public int CurrentReserve => _reserve;
     public float CurrentDamage => damage;
     public float CurrentFireRate => fireRate;
+    public bool IsReloading => _reloading;
+    public bool IsSwitching => _switchCooldown > 0f;
+    public bool IsReady => !_reloading && _cooldown <= 0f && _switchCooldown <= 0f;
 
     void Awake()
     {
@@ -120,6 +131,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     void Update()
     {
         if (_cooldown > 0f) _cooldown -= Time.deltaTime;
+        if (_switchCooldown > 0f) _switchCooldown -= Time.deltaTime;
     }
 
     /// <summary>
@@ -135,7 +147,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
 
     public void TryFire()
     {
-        if (_reloading || _cooldown > 0f) return;
+        if (_reloading || _cooldown > 0f || _switchCooldown > 0f) return;
 
         // Auto-reload if magazine is empty
         if (_inMag <= 0)
@@ -251,7 +263,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
 
     public void TryReload()
     {
-        if (_reloading) return;
+        if (_reloading || _switchCooldown > 0f) return;
         if (_inMag >= magSize) return; // already full
         if (_reserve <= 0) return; // no reserve ammo
 
@@ -300,6 +312,49 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         _reloading = false;
         OnAmmoChanged?.Invoke(_inMag, _reserve);
         UpdateAnimatorAmmo(); // Update animator parameter after reload
+    }
+
+    /// <summary>
+    /// Cancel/interrupt the current reload. Used when switching weapons during reload.
+    /// </summary>
+    public void CancelReload()
+    {
+        if (_reloading)
+        {
+            StopAllCoroutines(); // Stop the reload coroutine
+            _reloading = false;
+            
+            // Reset animator speed to normal if it was changed during reload
+            if (animator != null)
+            {
+                animator.speed = 1.0f;
+            }
+            
+            Debug.Log($"Reload cancelled for {displayName}");
+        }
+    }
+
+    /// <summary>
+    /// Called when this weapon becomes active. Starts the switch cooldown.
+    /// </summary>
+    public void OnWeaponActivated()
+    {
+        _switchCooldown = weaponSwitchDelay;
+        Debug.Log($"{displayName} activated - switch cooldown: {weaponSwitchDelay}s");
+    }
+
+    /// <summary>
+    /// Triggers switch out animation and returns the delay before weapon should be hidden.
+    /// </summary>
+    /// <returns>Delay in seconds before weapon should be deactivated</returns>
+    public float TriggerSwitchOutAnimation()
+    {
+        if (animator != null && !string.IsNullOrEmpty(switchOutTriggerName))
+        {
+            animator.SetTrigger(switchOutTriggerName);
+            Debug.Log($"{displayName} triggered switch out animation - delay: {switchOutAnimationDelay}s");
+        }
+        return switchOutAnimationDelay;
     }
 
     /// <summary>

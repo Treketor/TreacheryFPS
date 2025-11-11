@@ -114,7 +114,7 @@ public class WeaponUpgradeMachine : MonoBehaviour
         }
 
         // Get current weapon
-        WeaponInstance_Hitscan currentWeapon = weaponController.currentWeapon;
+        WeaponInstance_Hitscan currentWeapon = weaponController.CurrentWeapon;
         if (!currentWeapon)
         {
             Debug.Log("No weapon equipped!");
@@ -176,7 +176,7 @@ public class WeaponUpgradeMachine : MonoBehaviour
     public WeaponInstance_Hitscan GetCurrentWeapon()
     {
         if (!weaponController) return null;
-        return weaponController.currentWeapon;
+        return weaponController.CurrentWeapon;
     }
 
     public int GetCurrentUpgradeCost()
