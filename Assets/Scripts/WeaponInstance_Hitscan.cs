@@ -67,12 +67,39 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [Tooltip("Time after switching to this weapon before it can be used")]
     [SerializeField] float switchOutAnimationDelay = 0.5f;
     [Tooltip("Time to wait after triggering Switch Out animation before hiding weapon")]
+    
+    [Header("Aim Down Sights")]
+    [SerializeField] bool supportsADS = true;
+    [SerializeField] Transform weaponGFX;
+    [Tooltip("Auto-find weapon GFX object by name")]
+    [SerializeField] bool autoFindGFX = true;
+    [Tooltip("FOV when aiming down sights")]
+    [SerializeField] float adsFOV = 40f;
+    [Tooltip("How fast the camera transitions to ADS FOV")]
+    [SerializeField] float adsTransitionSpeed = 8f;
+    [Tooltip("Weapon GFX position when aiming down sights")]
+    [SerializeField] Vector3 adsPosition = new Vector3(0f, 0f, 0.2f);
+    [Tooltip("How fast weapon GFX moves to ADS position")]
+    [SerializeField] float adsPositionSpeed = 12f;
+    [Tooltip("Spread reduction when aiming (multiplier)")]
+    [SerializeField] float adsSpreadMultiplier = 0.3f;
+    [Tooltip("Animation trigger name for ADS")]
+    [SerializeField] string adsAnimationTrigger = "ADS";
+    [Tooltip("Animation bool parameter name for ADS state")]
+    [SerializeField] string adsAnimationBool = "IsAiming";
 
     float _cooldown;
     float _switchCooldown;
     int _inMag;
     int _reserve;
     bool _reloading;
+    
+    // ADS variables
+    bool _isAiming = false;
+    bool _wasAiming = false;
+    Vector3 _originalGFXPosition;
+    float _originalFOV;
+    Camera _mainCamera;
 
     public System.Action<int, int> OnAmmoChanged;
     public System.Action<string, string> OnTierChanged;
@@ -88,6 +115,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public bool IsReloading => _reloading;
     public bool IsSwitching => _switchCooldown > 0f;
     public bool IsReady => !_reloading && _cooldown <= 0f && _switchCooldown <= 0f;
+    public bool IsAiming => _isAiming;
 
     void Awake()
     {
@@ -111,6 +139,9 @@ public class WeaponInstance_Hitscan : MonoBehaviour
             if (weaponRecoil)
                 Debug.Log($"WeaponInstance_Hitscan ({displayName}): Auto-found WeaponRecoil component");
         }
+        
+        // Initialize ADS system
+        InitializeADS();
 
         // Make sure muzzle flash starts disabled
         if (muzzleFlashObject != null)
@@ -132,6 +163,9 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     {
         if (_cooldown > 0f) _cooldown -= Time.deltaTime;
         if (_switchCooldown > 0f) _switchCooldown -= Time.deltaTime;
+        
+        // Update ADS
+        UpdateADS();
     }
 
     /// <summary>
@@ -206,7 +240,10 @@ public class WeaponInstance_Hitscan : MonoBehaviour
             return;
         }
 
-        if (raycaster.TryShoot(out var hit, spread))
+        // Apply ADS spread reduction
+        float currentSpread = _isAiming ? spread * adsSpreadMultiplier : spread;
+        
+        if (raycaster.TryShoot(out var hit, currentSpread))
         {
             bool isHeadshot = false;
             float finalDamage = damage;
@@ -266,6 +303,12 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         if (_reloading || _switchCooldown > 0f) return;
         if (_inMag >= magSize) return; // already full
         if (_reserve <= 0) return; // no reserve ammo
+
+        // Cancel ADS when starting reload
+        if (_isAiming)
+        {
+            SetAiming(false);
+        }
 
         StartCoroutine(ReloadCoroutine());
     }
@@ -349,12 +392,121 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     /// <returns>Delay in seconds before weapon should be deactivated</returns>
     public float TriggerSwitchOutAnimation()
     {
+        // Cancel ADS when switching weapons
+        if (_isAiming)
+        {
+            Debug.Log($"{displayName}: Canceling ADS due to weapon switch");
+            SetAiming(false);
+        }
+        
         if (animator != null && !string.IsNullOrEmpty(switchOutTriggerName))
         {
             animator.SetTrigger(switchOutTriggerName);
             Debug.Log($"{displayName} triggered switch out animation - delay: {switchOutAnimationDelay}s");
         }
         return switchOutAnimationDelay;
+    }
+    
+    /// <summary>
+    /// Sets the aiming state for this weapon
+    /// </summary>
+    public void SetAiming(bool aiming)
+    {
+        if (!supportsADS) return;
+        
+        // Prevent ADS during weapon state changes
+        if (aiming && (IsReloading || IsSwitching || !IsReady))
+        {
+            return;
+        }
+        
+        _isAiming = aiming;
+        
+        // Trigger animation if state changed
+        if (_isAiming != _wasAiming && animator != null)
+        {
+            if (!string.IsNullOrEmpty(adsAnimationBool))
+                animator.SetBool(adsAnimationBool, _isAiming);
+                
+            if (_isAiming && !string.IsNullOrEmpty(adsAnimationTrigger))
+                animator.SetTrigger(adsAnimationTrigger);
+        }
+        
+        _wasAiming = _isAiming;
+    }
+    
+    /// <summary>
+    /// Initializes the ADS system components
+    /// </summary>
+    void InitializeADS()
+    {
+        // Find main camera
+        _mainCamera = Camera.main;
+        if (_mainCamera == null)
+        {
+            _mainCamera = FindFirstObjectByType<Camera>();
+        }
+        
+        // Store original FOV
+        if (_mainCamera != null)
+        {
+            _originalFOV = _mainCamera.fieldOfView;
+        }
+        
+        // Auto-find weapon GFX if not assigned
+        if (weaponGFX == null && autoFindGFX)
+        {
+            // Look for common GFX object names
+            Transform gfxChild = transform.Find("GFX") ?? 
+                                transform.Find("Model") ?? 
+                                transform.Find("Mesh") ?? 
+                                transform.Find("Visual");
+            
+            if (gfxChild != null)
+            {
+                weaponGFX = gfxChild;
+                Debug.Log($"WeaponInstance_Hitscan ({displayName}): Auto-found weapon GFX: {weaponGFX.name}");
+            }
+            else if (transform.childCount > 0)
+            {
+                // Fallback to first child if no common names found
+                weaponGFX = transform.GetChild(0);
+                Debug.Log($"WeaponInstance_Hitscan ({displayName}): Using first child as weapon GFX: {weaponGFX.name}");
+            }
+        }
+        
+        // Store original GFX position
+        if (weaponGFX != null)
+        {
+            _originalGFXPosition = weaponGFX.localPosition;
+        }
+        else
+        {
+            Debug.LogWarning($"WeaponInstance_Hitscan ({displayName}): No weapon GFX object assigned! ADS positioning will not work.");
+        }
+    }
+    
+    /// <summary>
+    /// Updates ADS camera and weapon GFX positioning
+    /// </summary>
+    void UpdateADS()
+    {
+        if (!supportsADS || _mainCamera == null) return;
+        
+        // Don't update ADS if weapon is not active
+        if (!gameObject.activeInHierarchy) return;
+        
+        // Smoothly transition camera FOV
+        float targetFOV = _isAiming ? adsFOV : _originalFOV;
+        _mainCamera.fieldOfView = Mathf.Lerp(_mainCamera.fieldOfView, targetFOV, adsTransitionSpeed * Time.deltaTime);
+        
+        // Smoothly transition weapon GFX position
+        if (weaponGFX != null)
+        {
+            Vector3 targetPosition = _isAiming ? _originalGFXPosition + adsPosition : _originalGFXPosition;
+            
+            weaponGFX.localPosition = Vector3.Lerp(weaponGFX.localPosition, targetPosition, adsPositionSpeed * Time.deltaTime);
+        }
     }
 
     /// <summary>

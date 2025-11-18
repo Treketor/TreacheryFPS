@@ -33,6 +33,7 @@ public class WeaponController : MonoBehaviour
     InputAction _attackAction;
     InputAction _reloadAction;
     InputAction _switchWeaponAction;
+    InputAction _aimAction;
 
     void Awake()
     {
@@ -41,6 +42,7 @@ public class WeaponController : MonoBehaviour
             _attackAction = playerInput.FindAction("Attack");
             _reloadAction = playerInput.FindAction("Reload");
             _switchWeaponAction = playerInput.FindAction("SwitchWeapon");
+            _aimAction = playerInput.FindAction("Aim");
             
             if (_attackAction == null)
                 Debug.LogWarning("WeaponController: Attack action not found in InputActionAsset!");
@@ -48,6 +50,8 @@ public class WeaponController : MonoBehaviour
                 Debug.LogWarning("WeaponController: Reload action not found in InputActionAsset!");
             if (_switchWeaponAction == null)
                 Debug.LogWarning("WeaponController: SwitchWeapon action not found in InputActionAsset!");
+            if (_aimAction == null)
+                Debug.LogWarning("WeaponController: Aim action not found in InputActionAsset!");
         }
         else
         {
@@ -82,6 +86,7 @@ public class WeaponController : MonoBehaviour
         
         _attackAction?.Enable();
         _reloadAction?.Enable();
+        _aimAction?.Enable();
     }
 
     void OnDisable()
@@ -89,6 +94,7 @@ public class WeaponController : MonoBehaviour
         // Disable input actions when this component is disabled
         _attackAction?.Disable();
         _reloadAction?.Disable();
+        _aimAction?.Disable();
         
         if (playerInput != null)
         {
@@ -100,14 +106,37 @@ public class WeaponController : MonoBehaviour
     {
         if (CurrentWeapon == null) return;
 
+        // Don't process input if game is paused
+        if (PauseMenuController.Instance != null && PauseMenuController.Instance.IsPaused)
+            return;
+
+        // Don't allow any weapon actions during switching
+        if (_isSwitching) return;
+
         if (_attackAction != null && _attackAction.IsPressed())
             CurrentWeapon.TryFire();
 
         if (_reloadAction != null && _reloadAction.WasPressedThisFrame())
             CurrentWeapon.TryReload();
 
-        if (_switchWeaponAction != null && _switchWeaponAction.WasPressedThisFrame())
+        // Handle ADS input BEFORE weapon switching
+        bool isAiming = _aimAction != null && _aimAction.IsPressed();
+        bool switchPressed = _switchWeaponAction != null && _switchWeaponAction.WasPressedThisFrame();
+        
+        // If switching weapons, force ADS off
+        if (switchPressed)
+        {
+            isAiming = false;
+            if (CurrentWeapon != null)
+            {
+                Debug.Log($"WeaponController: Canceling ADS on {CurrentWeapon.DisplayName} due to weapon switch input");
+            }
             SwitchToNextWeapon();
+        }
+        
+        // Apply ADS state to current weapon
+        if (CurrentWeapon != null)
+            CurrentWeapon.SetAiming(isAiming);
     }
 
     void InitializeWeapons()
@@ -121,12 +150,14 @@ public class WeaponController : MonoBehaviour
             }
         }
 
-        // Find first available weapon and set as active (no delay on initialization)
+        // Find first available weapon and set as active (with proper activation delay)
         for (int i = 0; i < weaponSlots.Length; i++)
         {
             if (weaponSlots[i] != null)
             {
-                SwitchToWeapon(i, false); // false = no switch delay on first weapon
+                // Set active weapon index to invalid value first, then switch to ensure activation
+                activeWeaponIndex = -1;
+                SwitchToWeapon(i, true); // true = apply switch delay even on first weapon
                 break;
             }
         }
@@ -140,6 +171,13 @@ public class WeaponController : MonoBehaviour
         // Prevent switching if already switching or if current weapon index is the same
         if (_isSwitching || weaponIndex == activeWeaponIndex)
             return;
+
+        // Prevent switching if current weapon is not ready (still in switch cooldown)
+        if (CurrentWeapon != null && !CurrentWeapon.IsReady)
+        {
+            Debug.Log("Cannot switch weapons while current weapon is not ready");
+            return;
+        }
 
         // Check if switching during reload is allowed
         if (!allowSwitchDuringReload && CurrentWeapon != null && CurrentWeapon.IsReloading)

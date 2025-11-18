@@ -21,8 +21,8 @@ public class SoulPickup : MonoBehaviour
     [SerializeField] float ejectionDamping = 8f;
 
     [Header("Attraction Phase")]
-    [Tooltip("Delay before soul starts flying toward player")]
-    [SerializeField] float attractionDelay = 0.5f;
+    [Tooltip("Distance from player required to start attraction")]
+    [SerializeField] float attractionRange = 3f;
     [Tooltip("Speed when flying toward player")]
     [SerializeField] float attractionSpeed = 12f;
     [Tooltip("Acceleration multiplier as it gets closer to player")]
@@ -103,15 +103,19 @@ public class SoulPickup : MonoBehaviour
         }
         else if (!_isAttracting)
         {
-            // Waiting phase: float in place (or fall slightly)
-            _velocity.y -= ejectionGravity * 0.2f * Time.deltaTime;
-            transform.position += _velocity * Time.deltaTime;
-            _velocity *= 0.92f; // Gentle damping
+            // Waiting phase: float in place (no gravity, no movement)
+            
+            // Stop all velocity to prevent any movement
+            _velocity = Vector3.zero;
 
-            // Start attraction after delay
-            if (_timer >= attractionDelay)
+            // Check if player is close enough to start attraction
+            if (_player != null)
             {
-                _isAttracting = true;
+                float distanceToPlayer = Vector3.Distance(transform.position, _player.position);
+                if (distanceToPlayer <= attractionRange)
+                {
+                    _isAttracting = true;
+                }
             }
         }
         else if (_isAttracting && _player != null)
@@ -161,6 +165,10 @@ public class SoulPickup : MonoBehaviour
         // Debug visualization
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, 0.3f);
+
+        // Show attraction range
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, attractionRange);
 
         if (_player != null && _isAttracting)
         {
