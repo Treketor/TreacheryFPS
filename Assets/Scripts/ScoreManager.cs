@@ -14,7 +14,6 @@ public class ScoreManager : MonoBehaviour
     [SerializeField] int pointsPerHeadshot = 50; // Bonus on top of kill
     [SerializeField] int pointsPerBossKill = 500;
     [SerializeField] int pointsPerWaveComplete = 200;
-    [SerializeField] float multiplayerScoreMultiplier = 1.25f; // Per additional player
 
     [Header("Statistics")]
     [SerializeField] int totalKills = 0;

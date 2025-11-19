@@ -489,6 +489,7 @@ GameObject:
   - component: {fileID: 10217195}
   - component: {fileID: 10217196}
   - component: {fileID: 10217197}
+  - component: {fileID: 10217198}
   m_Layer: 5
   m_Name: UI Canvas
   m_TagString: Untagged
@@ -687,6 +688,30 @@ MonoBehaviour:
   uiAudioSource: {fileID: 0}
   menuNavigateSound: {fileID: 0}
   menuSelectSound: {fileID: 0}
+--- !u!114 &10217198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 10217190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e25aa1c4694a5c544b1049fc2c7530f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CrosshairManager
+  crosshairImage: {fileID: 1050524055}
+  autoFindCrosshair: 1
+  enemyDetectionColor: {r: 1, g: 0.3137255, b: 0.3137255, a: 1}
+  enemyLayers:
+    serializedVersion: 2
+    m_Bits: 192
+  detectionRange: 100
+  defaultCrosshair: {fileID: -2413806693520163455, guid: 1ac3c144dea59f34ba109f4ce508d869, type: 3}
+  enableBloomScaling: 0
+  minCrosshairScale: 1
+  maxCrosshairScale: 5
+  scaleTransitionSpeed: 999
 --- !u!1 &10589715
 GameObject:
   m_ObjectHideFlags: 0
@@ -1903,7 +1928,6 @@ MonoBehaviour:
   pointsPerHeadshot: 50
   pointsPerBossKill: 500
   pointsPerWaveComplete: 200
-  multiplayerScoreMultiplier: 1.25
   totalKills: 0
   totalHeadshots: 0
   totalShotsFired: 0
@@ -2659,6 +2683,12 @@ MonoBehaviour:
   baseMagSize: 30
   baseReloadTime: 3
   baseSpread: 1.5
+  minBloom: 0.5
+  maxBloom: 5
+  bloomDecayRate: 3
+  movementBloomRate: 2
+  maxBloomADS: 2
+  bloomDecayRateADS: 4
   currentTier: 0
   startingReserve: 9999
   raycaster: {fileID: 484030140}
@@ -2666,10 +2696,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 193
   weaponRecoil: {fileID: 0}
-  recoilMultiplier: 1.25
+  recoilMultiplier: 2.25
   autoFindRecoil: 1
   muzzleFlashObject: {fileID: 239749738}
   muzzleFlashDuration: 0.025
+  enableImpactEffects: 1
   animator: {fileID: 377847922}
   shootTriggerName: Shoot
   reloadTriggerName: Reload
@@ -2690,8 +2721,9 @@ MonoBehaviour:
   adsPosition: {x: -0.191, y: 0.08, z: -0.4}
   adsPositionSpeed: 12
   adsSpreadMultiplier: 0.3
-  adsAnimationTrigger: ADS
+  adsRecoilMultiplier: 0.33
   adsAnimationBool: IsAiming
+  crosshairSprite: {fileID: 0}
 --- !u!1 &266387227
 GameObject:
   m_ObjectHideFlags: 0
@@ -4333,7 +4365,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &425090036
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4357,7 +4389,7 @@ MonoBehaviour:
     - prefab: {fileID: 2153138576233801362, guid: b30ee439ab72b41c593676e5fde7348b, type: 3}
       weight: 1
   endlessMode: 1
-  enemiesPerWaveIncrease: 5
+  enemiesPerWaveIncrease: 0
   enemyScaleMultiplier: 1.1
   baseSpeedRange: {x: 1, y: 2}
   speedIncreasePerWave: 0.15
@@ -9270,6 +9302,12 @@ MonoBehaviour:
   baseMagSize: 12
   baseReloadTime: 2.5
   baseSpread: 1.5
+  minBloom: 0.5
+  maxBloom: 4
+  bloomDecayRate: 3
+  movementBloomRate: 2
+  maxBloomADS: 1
+  bloomDecayRateADS: 8
   currentTier: 0
   startingReserve: 9999
   raycaster: {fileID: 1206123381}
@@ -9277,10 +9315,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 193
   weaponRecoil: {fileID: 0}
-  recoilMultiplier: 2
+  recoilMultiplier: 3
   autoFindRecoil: 1
   muzzleFlashObject: {fileID: 1291237795}
   muzzleFlashDuration: 0.025
+  enableImpactEffects: 1
   animator: {fileID: 1211848733}
   shootTriggerName: Shoot
   reloadTriggerName: Reload
@@ -9298,11 +9337,12 @@ MonoBehaviour:
   autoFindGFX: 1
   adsFOV: 60
   adsTransitionSpeed: 16
-  adsPosition: {x: -0.136, y: 0.068, z: -0.25}
+  adsPosition: {x: -0.136, y: 0.074, z: -0.25}
   adsPositionSpeed: 12
   adsSpreadMultiplier: 0.3
-  adsAnimationTrigger: ADS
+  adsRecoilMultiplier: 0.33
   adsAnimationBool: IsAiming
+  crosshairSprite: {fileID: 0}
 --- !u!1 &800244890
 GameObject:
   m_ObjectHideFlags: 0
@@ -12182,7 +12222,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 10, y: 10}
+  m_SizeDelta: {x: 8, y: 8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1050524055
 MonoBehaviour:
@@ -12204,7 +12244,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: -2413806693520163455, guid: 1ac3c144dea59f34ba109f4ce508d869, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -15730,6 +15770,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1230291409}
+  - component: {fileID: 1230291410}
+  - component: {fileID: 1230291411}
   m_Layer: 0
   m_Name: Weapon Anchor
   m_TagString: Untagged
@@ -15754,6 +15796,42 @@ Transform:
   - {fileID: 264327423}
   m_Father: {fileID: 330585546}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1230291410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1230291407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0bf84208d8bc424c9ae2308774a2fb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BulletImpactManager
+  defaultImpactPrefab: {fileID: 766371617972902645, guid: ef2d668ebab29b44caad16817f7a6bc7, type: 3}
+  effectLifetime: 10
+  alignToSurface: 1
+  surfaceOffset: {x: 0, y: 0, z: 0}
+--- !u!114 &1230291411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1230291407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d6133aea0b5ce34da603818ddd47905, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSway
+  swayAmount: 4
+  maxSwayAmount: 0.1
+  swaySpeed: 3
+  returnSpeed: 4
+  enableHorizontalSway: 1
+  enableVerticalSway: 1
+  disableSwayDuringADS: 1
+  adsTransitionSpeed: 10
 --- !u!43 &1246419638
 Mesh:
   m_ObjectHideFlags: 0
@@ -15971,6 +16049,7 @@ MonoBehaviour:
   sprintSpeed: 10
   movementMultiplier: 1
   groundAcceleration: 25
+  adsSpeedMultiplier: 0.5
   airAcceleration: 8
   maxAirSpeed: 4
   minSprintSpeed: 2
@@ -16038,6 +16117,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FirstPersonLook
   sensitivity: 0.15
   cameraTransform: {fileID: 330585546}
+  adsSensitivityMultiplier: 0.5
   playerInput: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   weaponRecoil: {fileID: 0}
   autoFindRecoil: 1
@@ -17827,6 +17907,10 @@ PrefabInstance:
     - target: {fileID: 100004, guid: 2b80d2843dd54ca46ac16e9f28dcf9d2, type: 3}
       propertyPath: m_Layer
       value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 100004, guid: 2b80d2843dd54ca46ac16e9f28dcf9d2, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 100006, guid: 2b80d2843dd54ca46ac16e9f28dcf9d2, type: 3}
       propertyPath: m_Layer
@@ -24842,63 +24926,6 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
---- !u!1001 &4345376027460589120
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 398041584917184814, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_Name
-      value: Soul Pickup
-      objectReference: {fileID: 0}
-    - target: {fileID: 2005174054910027653, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2005174054910027653, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 2.05
-      objectReference: {fileID: 0}
-    - target: {fileID: 2005174054910027653, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 6.12
-      objectReference: {fileID: 0}
-    - target: {fileID: 2005174054910027653, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2005174054910027653, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2005174054910027653, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2005174054910027653, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2005174054910027653, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2005174054910027653, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2005174054910027653, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -24914,4 +24941,3 @@ SceneRoots:
   - {fileID: 147891538}
   - {fileID: 1162043491}
   - {fileID: 1267071168}
-  - {fileID: 4345376027460589120}

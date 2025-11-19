@@ -13,6 +13,15 @@ The ADS system provides smooth camera FOV transitions, weapon positioning, impro
    - **Interactions**: Hold (for continuous aiming)
 3. Save the Input Actions asset
 
+### 1.1. Crosshair Manager Setup
+1. **Create UI Crosshair**: Add an Image component to your UI Canvas for the crosshair display
+2. **Add CrosshairManager**: Attach the script to any GameObject in your scene
+3. **Configure Settings**:
+   - **Crosshair Image**: Assign your UI crosshair Image (or let it auto-find)
+   - **Auto Find Crosshair**: Enable to automatically locate crosshair UI elements
+   - **Default Crosshair**: Set fallback sprite for weapons without specific crosshairs
+4. **Weapon Assignment**: Assign unique crosshair sprites to weapons in their inspectors (optional)
+
 ## Weapon Configuration
 
 ### 2. Configure ADS Settings per Weapon
@@ -31,6 +40,10 @@ Each weapon has these ADS settings in the inspector:
 #### **Animation Settings:**
 - **ADS Animation Trigger**: Trigger name for entering ADS (default: "ADS")
 - **ADS Animation Bool**: Bool parameter for ADS state (default: "IsAiming")
+
+#### **Crosshair Settings:**
+- **Crosshair Sprite**: Custom crosshair sprite for this weapon (assign manually)
+- **Auto Find Crosshair**: Reserved for future use (currently unused)
 
 ## Weapon Model Setup
 
@@ -62,6 +75,34 @@ WeaponPrefab
 2. Move weapon model/mesh under the GFX object
 3. Assign GFX object to **Weapon GFX** field if auto-detection fails
 4. Uncheck **Auto Find GFX** for manual control
+
+### 2.2. Crosshair Setup
+
+#### **Crosshair System Overview:**
+The crosshair system uses your existing UI crosshair element and changes its sprite based on the active weapon.
+
+#### **Setup Steps:**
+
+1. **Create/Locate UI Crosshair**:
+   - Ensure you have a UI Image component for the crosshair in your Canvas
+   - Name it "Crosshair", "crosshair", "Reticle", or similar for auto-detection
+   - Position it at the center of your screen
+
+2. **Configure CrosshairManager**:
+   - Add CrosshairManager script to your scene
+   - Let it auto-find your UI crosshair, or assign manually
+   - Set a **Default Crosshair** sprite (used when weapons have no specific crosshair)
+
+3. **Assign Weapon Crosshairs**:
+   - In each weapon's inspector, assign a **Crosshair Sprite** (optional)
+   - If no sprite is assigned, the default crosshair will be used
+   - Each weapon can have its unique crosshair design
+
+#### **Behavior:**
+- **Weapon Switching**: Crosshair sprite changes automatically to match active weapon
+- **Default Fallback**: Weapons without assigned crosshairs use the default sprite
+- **ADS Integration**: Crosshair automatically hides when aiming down sights
+- **No Crosshair**: If no default and no weapon crosshair, UI element is hidden
 
 ## Animation Setup
 
@@ -149,24 +190,41 @@ if (weapon.IsAiming)
 }
 ```
 
-### 8. Custom ADS Effects
-Add these features by checking `IsAiming`:
+### 8. Movement & Input Integration
+The ADS system automatically integrates with player systems:
 
-#### **Movement Speed Reduction:**
-```csharp
-float moveSpeed = baseSpeed;
-if (currentWeapon.IsAiming)
-{
-    moveSpeed *= 0.5f; // 50% speed when aiming
-}
-```
+#### **Built-in Movement Effects:**
+- **Speed Reduction**: Universal ADS speed multiplier (default: 40% speed)
+- **Sprint Prevention**: Cannot sprint while aiming
+- **Automatic Sprint Cancel**: Sprinting stops when ADS begins
 
-#### **Mouse Sensitivity Scaling:**
+#### **Built-in Mouse Sensitivity:**
+- **Sensitivity Scaling**: Universal ADS sensitivity multiplier (default: 60% sensitivity)
+- **Precise Aiming**: Reduced mouse sensitivity for better accuracy
+- **Automatic Application**: Works with all weapons when aiming
+
+#### **Configuration Settings:**
+- **PlayerMovement - ADS Speed Multiplier**: Movement speed reduction (0.4 = 60% slower)
+- **FirstPersonLook - ADS Sensitivity Multiplier**: Mouse sensitivity scaling (0.6 = 40% less sensitive)
+- **Universal Application**: Same settings for all weapons
+
+#### **Custom ADS Effects:**
+Add additional features by checking `IsAiming`:
+
 ```csharp
-float mouseSens = baseSensitivity;
-if (currentWeapon.IsAiming)
+WeaponInstance_Hitscan weapon = weaponController.CurrentWeapon;
+if (weapon != null && weapon.IsAiming)
 {
-    mouseSens *= 0.6f; // Reduced sensitivity when aiming
+    // Mouse sensitivity is automatically handled by FirstPersonLook
+    // Add other custom effects here:
+    
+    // UI changes (crosshairs are automatically managed and hidden during ADS)
+    
+    // Audio effects
+    PlayADSAmbienceSound();
+    
+    // Visual effects
+    ApplyDepthOfField();
 }
 ```
 
@@ -182,6 +240,16 @@ if (currentWeapon.IsAiming)
 - ✅ Cannot ADS while reloading
 - ✅ Cannot ADS while switching weapons
 - ✅ ADS automatically cancels when starting reload/switch
+- ✅ Movement speed reduced when aiming
+- ✅ Cannot sprint while aiming
+- ✅ Sprinting stops when ADS begins
+- ✅ Mouse sensitivity reduced when aiming
+- ✅ Look sensitivity returns to normal when exiting ADS
+- ✅ Weapon-specific crosshairs display correctly
+- ✅ Crosshair changes automatically when switching weapons
+- ✅ Default crosshair shows for weapons without specific crosshairs
+- ✅ Crosshair hides automatically when entering ADS
+- ✅ Crosshair shows again when exiting ADS
 
 ### 10. Common Issues & Solutions
 
@@ -201,6 +269,12 @@ if (currentWeapon.IsAiming)
 - Verify "IsAiming" parameter exists in Animator
 - Check ADS Animation Bool name matches
 - Ensure transitions have correct conditions
+
+#### **Crosshair not changing:**
+- Check CrosshairManager is in the scene and configured
+- Verify weapon has crosshair sprite assigned or auto-detection enabled
+- Check console for crosshair detection debug messages
+- Ensure UI Image component is properly assigned to CrosshairManager
 
 ## Advanced Features
 
@@ -222,7 +296,10 @@ Ready for additional features:
 1. Hold right mouse button to aim down sights
 2. Camera smoothly zooms to configured FOV
 3. Weapon moves to aiming position
-4. Improved accuracy for precise shots
-5. Release to return to normal view
-6. Works seamlessly with shooting
-7. Automatically cancels when reloading or switching weapons
+4. Movement speed automatically reduces
+5. Mouse sensitivity automatically reduces for precision
+6. Sprint is disabled while aiming
+7. Improved accuracy for precise shots
+8. Release to return to normal view
+9. Works seamlessly with shooting
+10. Automatically cancels when reloading or switching weapons

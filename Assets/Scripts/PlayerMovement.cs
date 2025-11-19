@@ -9,6 +9,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] float sprintSpeed = 10f;
     [SerializeField] float movementMultiplier = 1f;
     [SerializeField] float groundAcceleration = 25f;
+    
+    [Header("ADS Movement")]
+    [SerializeField] float adsSpeedMultiplier = 0.4f;
+    [Tooltip("Universal speed multiplier when aiming down sights")]
     [SerializeField] float airAcceleration = 8f;
     [SerializeField] float maxAirSpeed = 4f;
     [SerializeField] float minSprintSpeed = 2f;
@@ -32,6 +36,7 @@ public class PlayerMovement : MonoBehaviour
     private float currentHeight;
     private float targetHeight;
     private CharacterController controller;
+    private WeaponController weaponController;
 
     [Header("Input")]
     [SerializeField] InputActionAsset playerInput;
@@ -43,6 +48,12 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         controller = GetComponent<CharacterController>();
+        weaponController = GetComponent<WeaponController>();
+        if (weaponController == null)
+        {
+            Debug.LogWarning("PlayerMovement: WeaponController not found on same GameObject!");
+        }
+        
         standingHeight = controller.height;
         standingCenter = controller.center;
         currentHeight = standingHeight;
@@ -142,21 +153,24 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleSprint(float inputZ)
     {
-        // Cancel sprint when crouching
-        if (isCrouching)
+        // Check if player is aiming down sights
+        bool isAiming = weaponController != null && weaponController.CurrentWeapon != null && weaponController.CurrentWeapon.IsAiming;
+        
+        // Cancel sprint when crouching or aiming
+        if (isCrouching || isAiming)
         {
             isSprinting = false;
             return;
         }
 
-        // Handle sprint toggle - only allow sprinting when moving primarily forward
-        if (sprintAction.WasPressedThisFrame() && controller.isGrounded && inputZ > 0.5f)
+        // Handle sprint toggle - only allow sprinting when moving primarily forward and not aiming
+        if (sprintAction.WasPressedThisFrame() && controller.isGrounded && inputZ > 0.5f && !isAiming)
         {
             isSprinting = true;
         }
 
-        // Cancel sprint if not moving forward, no input, or velocity too low
-        if (isSprinting && controller.isGrounded && (inputZ <= 0.5f || currentHorizontalVelocity.magnitude < minSprintSpeed))
+        // Cancel sprint if not moving forward, no input, velocity too low, or started aiming
+        if (isSprinting && controller.isGrounded && (inputZ <= 0.5f || currentHorizontalVelocity.magnitude < minSprintSpeed || isAiming))
         {
             isSprinting = false;
         }
@@ -167,7 +181,17 @@ public class PlayerMovement : MonoBehaviour
         // Update horizontal velocity: accelerate on ground, maintain momentum in air
         if (controller.isGrounded)
         {
+            // Check if player is aiming down sights
+            bool isAiming = weaponController != null && weaponController.CurrentWeapon != null && weaponController.CurrentWeapon.IsAiming;
+            
             float currentSpeed = isCrouching ? crouchSpeed : (isSprinting ? sprintSpeed : moveSpeed);
+            
+            // Apply ADS speed reduction
+            if (isAiming)
+            {
+                currentSpeed *= adsSpeedMultiplier;
+            }
+            
             Vector3 targetVelocity = movementMultiplier * currentSpeed * inputDir;
             currentHorizontalVelocity = Vector3.MoveTowards(currentHorizontalVelocity, targetVelocity, groundAcceleration * Time.deltaTime);
         }

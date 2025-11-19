@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class WeaponInstance_Hitscan : MonoBehaviour
 {
@@ -15,8 +16,22 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public int baseMagSize = 12;
     [Tooltip("Base reload time in seconds")]
     public float baseReloadTime = 1.2f;
-    [Tooltip("Base spread/accuracy")]
+    [Tooltip("Base spread/accuracy - this becomes the minimum bloom")]
     public float baseSpread = 1.5f;
+    
+    [Header("Bloom System")]
+    [SerializeField] float minBloom = 0.5f;
+    [Tooltip("Tightest and most accurate bloom value")]
+    [SerializeField] float maxBloom = 4.0f;
+    [Tooltip("Widest and least accurate bloom value")]
+    [SerializeField] float bloomDecayRate = 3.0f;
+    [Tooltip("How quick the bloom goes to minimum")]
+    [SerializeField] float movementBloomRate = 2.0f;
+    [Tooltip("How quick the bloom goes to maximum when moving")]
+    [SerializeField] float maxBloomADS = 2.0f;
+    [Tooltip("Maximum bloom value when ADS")]
+    [SerializeField] float bloomDecayRateADS = 4.0f;
+    [Tooltip("How quick the bloom goes to minimum when ADS")]
     
     [Header("Current Tier")]
     [SerializeField] WeaponTier currentTier = WeaponTier.Common;
@@ -43,6 +58,10 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [Header("Muzzle Flash")]
     [SerializeField] GameObject muzzleFlashObject;
     [SerializeField] float muzzleFlashDuration = 0.05f;
+
+    [Header("Bullet Impact Effects")]
+    [SerializeField] bool enableImpactEffects = true;
+    [Tooltip("Whether to spawn impact effects when bullets hit surfaces")]
 
     [Header("Animation")]
     [SerializeField] Animator animator;
@@ -83,14 +102,23 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [SerializeField] float adsPositionSpeed = 12f;
     [Tooltip("Spread reduction when aiming (multiplier)")]
     [SerializeField] float adsSpreadMultiplier = 0.3f;
-    [Tooltip("Animation trigger name for ADS")]
-    [SerializeField] string adsAnimationTrigger = "ADS";
+    [Tooltip("Recoil reduction when aiming (multiplier)")]
+    [SerializeField] float adsRecoilMultiplier = 0.5f;
     [Tooltip("Animation bool parameter name for ADS state")]
     [SerializeField] string adsAnimationBool = "IsAiming";
+    
+    [Header("Crosshair")]
+    [SerializeField] Sprite crosshairSprite;
+    [Tooltip("Custom crosshair for this weapon")]
 
     float _cooldown;
     float _switchCooldown;
     int _inMag;
+    
+    // Bloom system variables
+    float _currentBloom;
+    bool _isPlayerMoving;
+    PlayerMovement _playerMovement;
     int _reserve;
     bool _reloading;
     
@@ -116,6 +144,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public bool IsSwitching => _switchCooldown > 0f;
     public bool IsReady => !_reloading && _cooldown <= 0f && _switchCooldown <= 0f;
     public bool IsAiming => _isAiming;
+    public Sprite CrosshairSprite => crosshairSprite;
 
     void Awake()
     {
@@ -140,8 +169,14 @@ public class WeaponInstance_Hitscan : MonoBehaviour
                 Debug.Log($"WeaponInstance_Hitscan ({displayName}): Auto-found WeaponRecoil component");
         }
         
+        // Initialize crosshair system
+        InitializeCrosshair();
+        
         // Initialize ADS system
         InitializeADS();
+        
+        // Initialize bloom system
+        InitializeBloomSystem();
 
         // Make sure muzzle flash starts disabled
         if (muzzleFlashObject != null)
@@ -163,6 +198,9 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     {
         if (_cooldown > 0f) _cooldown -= Time.deltaTime;
         if (_switchCooldown > 0f) _switchCooldown -= Time.deltaTime;
+        
+        // Update bloom system
+        UpdateBloomSystem();
         
         // Update ADS
         UpdateADS();
@@ -215,13 +253,16 @@ public class WeaponInstance_Hitscan : MonoBehaviour
             StartCoroutine(ResetAnimatorSpeedAfterShoot(baseShootAnimationDuration / animationSpeed));
         }
 
-        // Apply recoil
-        if (weaponRecoil != null)
-        {
-            weaponRecoil.ApplyRecoil(recoilMultiplier);
-        }
-
-        // Trigger muzzle flash
+            // Apply recoil with ADS multiplier if aiming
+            if (weaponRecoil != null)
+            {
+                float finalRecoilMultiplier = recoilMultiplier;
+                if (_isAiming)
+                {
+                    finalRecoilMultiplier *= adsRecoilMultiplier;
+                }
+                weaponRecoil.ApplyRecoil(finalRecoilMultiplier);
+            }        // Trigger muzzle flash
         if (muzzleFlashObject != null)
         {
             StartCoroutine(ShowMuzzleFlash());
@@ -240,10 +281,13 @@ public class WeaponInstance_Hitscan : MonoBehaviour
             return;
         }
 
-        // Apply ADS spread reduction
-        float currentSpread = _isAiming ? spread * adsSpreadMultiplier : spread;
+        // Calculate current spread using bloom system
+        float bloomSpread = CalculateCurrentSpread();
         
-        if (raycaster.TryShoot(out var hit, currentSpread))
+        // Apply shooting bloom increase
+        AddShootingBloom();
+        
+        if (raycaster.TryShoot(out var hit, bloomSpread))
         {
             bool isHeadshot = false;
             float finalDamage = damage;
@@ -273,7 +317,11 @@ public class WeaponInstance_Hitscan : MonoBehaviour
                 }
             }
 
-            // TODO: spawn impact FX at hit.point (different FX for headshot?)
+            // Spawn impact effect at hit point
+            if (enableImpactEffects && BulletImpactManager.Instance != null)
+            {
+                BulletImpactManager.Instance.SpawnImpactEffect(hit.point, hit.normal, hit.collider);
+            }
         }
     }
 
@@ -414,8 +462,8 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     {
         if (!supportsADS) return;
         
-        // Prevent ADS during weapon state changes
-        if (aiming && (IsReloading || IsSwitching || !IsReady))
+        // Prevent ADS during weapon state changes (but allow during shooting/cooldown)
+        if (aiming && (IsReloading || IsSwitching))
         {
             return;
         }
@@ -428,11 +476,27 @@ public class WeaponInstance_Hitscan : MonoBehaviour
             if (!string.IsNullOrEmpty(adsAnimationBool))
                 animator.SetBool(adsAnimationBool, _isAiming);
                 
-            if (_isAiming && !string.IsNullOrEmpty(adsAnimationTrigger))
-                animator.SetTrigger(adsAnimationTrigger);
+            // ADS trigger removed - only using bool parameter
         }
         
         _wasAiming = _isAiming;
+    }
+    
+    /// <summary>
+    /// Initializes crosshair sprite for this weapon
+    /// </summary>
+    void InitializeCrosshair()
+    {
+        // Crosshair sprites are assigned manually in the inspector
+        // If no crosshair is assigned, the CrosshairManager will use the default crosshair
+        if (crosshairSprite != null)
+        {
+            Debug.Log($"WeaponInstance_Hitscan ({displayName}): Using assigned crosshair sprite");
+        }
+        else
+        {
+            Debug.Log($"WeaponInstance_Hitscan ({displayName}): No crosshair assigned, will use default crosshair");
+        }
     }
     
     /// <summary>
@@ -589,4 +653,92 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         OnAmmoChanged?.Invoke(_inMag, _reserve);
         // Note: Reserve ammo doesn't affect animator parameter (only magazine does)
     }
+    
+    #region Bloom System
+    
+    void InitializeBloomSystem()
+    {
+        // Initialize bloom to minimum value
+        _currentBloom = minBloom;
+        
+        // Find PlayerMovement component for movement detection
+        _playerMovement = FindFirstObjectByType<PlayerMovement>();
+        if (_playerMovement == null)
+        {
+            Debug.LogWarning($"WeaponInstance_Hitscan ({displayName}): PlayerMovement not found! Movement bloom will not work.");
+        }
+    }
+    
+    void UpdateBloomSystem()
+    {
+        // Check if player is moving
+        bool wasMoving = _isPlayerMoving;
+        _isPlayerMoving = IsPlayerMoving();
+        
+        float deltaTime = Time.deltaTime;
+        
+        // Determine max bloom and decay rate based on ADS state
+        float currentMaxBloom = _isAiming ? maxBloomADS : maxBloom;
+        float currentDecayRate = _isAiming ? bloomDecayRateADS : bloomDecayRate;
+        
+        if (_isPlayerMoving)
+        {
+            // Increase bloom when moving to current max bloom
+            _currentBloom = Mathf.MoveTowards(_currentBloom, currentMaxBloom, movementBloomRate * deltaTime);
+        }
+        else
+        {
+            // Decrease bloom when not moving
+            _currentBloom = Mathf.MoveTowards(_currentBloom, minBloom, currentDecayRate * deltaTime);
+        }
+        
+        // Clamp bloom to valid range
+        _currentBloom = Mathf.Clamp(_currentBloom, minBloom, currentMaxBloom);
+    }
+    
+    bool IsPlayerMoving()
+    {
+        if (_playerMovement == null) return false;
+        
+        // Check if player has horizontal movement input
+        // This checks actual velocity magnitude
+        CharacterController controller = _playerMovement.GetComponent<CharacterController>();
+        if (controller != null)
+        {
+            Vector3 horizontalVelocity = new Vector3(controller.velocity.x, 0, controller.velocity.z);
+            return horizontalVelocity.magnitude > 0.1f;
+        }
+        
+        return false;
+    }
+    
+    float CalculateCurrentSpread()
+    {
+        // Return current bloom value (ADS is already handled in bloom system)
+        return _currentBloom;
+    }
+    
+    void AddShootingBloom()
+    {
+        // Instantly set bloom to maximum when shooting (ADS-aware)
+        _currentBloom = _isAiming ? maxBloomADS : maxBloom;
+    }
+    
+    /// <summary>
+    /// Get current bloom value for debugging or UI display
+    /// </summary>
+    public float GetCurrentBloom()
+    {
+        return _currentBloom;
+    }
+    
+    /// <summary>
+    /// Get bloom as a percentage (0-1) where 0 is min bloom and 1 is max bloom
+    /// </summary>
+    public float GetBloomPercentage()
+    {
+        return Mathf.InverseLerp(minBloom, maxBloom, _currentBloom);
+    }
+    
+    #endregion
 }

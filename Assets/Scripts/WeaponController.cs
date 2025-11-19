@@ -227,6 +227,12 @@ public class WeaponController : MonoBehaviour
         OnWeaponChanged?.Invoke(CurrentWeaponDisplayName, CurrentTierName);
         OnAmmoChanged?.Invoke(CurrentAmmoInMag, CurrentReserveAmmo);
         OnWeaponSlotChanged?.Invoke(activeWeaponIndex, weaponSlots.Length);
+        
+        // Update crosshair for new weapon
+        if (CrosshairManager.Instance != null)
+        {
+            CrosshairManager.Instance.UpdateCrosshair();
+        }
 
         Debug.Log($"Switched to weapon slot {weaponIndex}: {CurrentWeaponDisplayName}");
 

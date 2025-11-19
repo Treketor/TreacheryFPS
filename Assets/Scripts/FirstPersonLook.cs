@@ -7,6 +7,10 @@ public class FirstPersonLook : MonoBehaviour
     public float sensitivity = 2f;
     public Transform cameraTransform;
     private float maxYAngle = 90f;
+    
+    [Header("ADS Sensitivity")]
+    [SerializeField] float adsSensitivityMultiplier = 0.6f;
+    [Tooltip("Mouse sensitivity multiplier when aiming down sights")]
 
     [Header("Input")]
     [SerializeField] private InputActionAsset playerInput;
@@ -17,6 +21,7 @@ public class FirstPersonLook : MonoBehaviour
     [SerializeField] private bool autoFindRecoil = true;
 
     private float rotationY = 0f;
+    private WeaponController weaponController;
 
     void Start()
     {
@@ -31,15 +36,26 @@ public class FirstPersonLook : MonoBehaviour
         {
             weaponRecoil = FindFirstObjectByType<WeaponRecoil>();
         }
+        
+        // Find weapon controller for ADS sensitivity
+        weaponController = GetComponent<WeaponController>();
+        if (weaponController == null)
+        {
+            Debug.LogWarning("FirstPersonLook: WeaponController not found on same GameObject!");
+        }
     }
 
     void Update()
     {
         Vector2 lookInput = lookAction.ReadValue<Vector2>();
 
-        // Apply sensitivity (mouse delta is already frame-based)
-        float deltaX = lookInput.x * sensitivity;
-        float deltaY = lookInput.y * sensitivity;
+        // Check if player is aiming down sights
+        bool isAiming = weaponController != null && weaponController.CurrentWeapon != null && weaponController.CurrentWeapon.IsAiming;
+        
+        // Apply sensitivity with ADS scaling
+        float currentSensitivity = isAiming ? sensitivity * adsSensitivityMultiplier : sensitivity;
+        float deltaX = lookInput.x * currentSensitivity;
+        float deltaY = lookInput.y * currentSensitivity;
 
         // Horizontal rotation (player body)
         transform.Rotate(Vector3.up, deltaX);

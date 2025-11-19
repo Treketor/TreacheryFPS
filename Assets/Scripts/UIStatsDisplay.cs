@@ -11,12 +11,6 @@ public class UIStatsDisplay : MonoBehaviour
     [SerializeField] TextMeshProUGUI killsText;
     [SerializeField] TextMeshProUGUI headshotsText;
     [SerializeField] TextMeshProUGUI accuracyText;
-
-    [Header("Display Format")]
-    [SerializeField] string killsFormat = "Kills: {0}";
-    [SerializeField] string headshotsFormat = "Headshots: {0}";
-    [SerializeField] string accuracyFormat = "Accuracy: {0:F1}%";
-
     // Script disabled - uncomment methods below to re-enable
 
     /*
@@ -47,7 +41,7 @@ public class UIStatsDisplay : MonoBehaviour
     void UpdateKills(int kills)
     {
         if (killsText)
-            killsText.text = string.Format(killsFormat, kills);
+            killsText.text = $"Kills: {kills}";
         
         UpdateAccuracy();
     }
@@ -55,7 +49,7 @@ public class UIStatsDisplay : MonoBehaviour
     void UpdateHeadshots(int headshots)
     {
         if (headshotsText)
-            headshotsText.text = string.Format(headshotsFormat, headshots);
+            headshotsText.text = $"Headshots: {headshots}";
         
         UpdateAccuracy();
     }
@@ -65,8 +59,7 @@ public class UIStatsDisplay : MonoBehaviour
         if (accuracyText && ScoreManager.Instance != null)
         {
             float accuracy = ScoreManager.Instance.HeadshotAccuracy;
-            accuracyText.text = string.Format(accuracyFormat, accuracy);
+            accuracyText.text = $"Accuracy: {accuracy:F1}%";
         }
-    }
     */
 }
