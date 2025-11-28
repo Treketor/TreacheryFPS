@@ -193,9 +193,9 @@ Based on your GDD:
 | Tier | Cost to Next | Damage | Fire Rate | Mag Size | Reload Time | Spread |
 |------|--------------|--------|-----------|----------|-------------|---------|
 | **Common** | 100 | 1.0× | 1.0× | 1.0× | 1.0× | 1.0× |
-| **Rare** | 250 | 1.5× | 1.2× | 1.3× | 0.85× | 0.9× |
-| **Epic** | 500 | 2.5× | 1.5× | 1.6× | 0.7× | 0.7× |
-| **Legendary** | — | 4.0× | 2.0× | 2.0× | 0.5× | 0.5× |
+| **Rare** | 250 | 1.5× | 1.0× | 1.3× | 1.0× | 0.9× |
+| **Epic** | 500 | 2.5× | 1.0× | 1.6× | 1.0× | 0.7× |
+| **Legendary** | — | 4.0× | 1.0× | 2.0× | 1.0× | 0.5× |
 
 *Note: Lower reload time and spread = better*
 
@@ -235,21 +235,21 @@ Based on your GDD:
 
 **After Rare (100 souls):**
 - Damage: 30 (20 × 1.5)
-- Fire Rate: 6 shots/sec (5 × 1.2)
+- Fire Rate: 5 shots/sec (unchanged)
 - Mag Size: 15 (12 × 1.3, rounded)
-- Reload: 1.02s (1.2 × 0.85)
+- Reload: 1.2s (unchanged)
 
 **After Epic (250 souls):**
 - Damage: 50 (20 × 2.5)
-- Fire Rate: 7.5 shots/sec (5 × 1.5)
+- Fire Rate: 5 shots/sec (unchanged)
 - Mag Size: 19 (12 × 1.6, rounded)
-- Reload: 0.84s (1.2 × 0.7)
+- Reload: 1.2s (unchanged)
 
 **After Legendary (500 souls):**
 - Damage: 80 (20 × 4.0)
-- Fire Rate: 10 shots/sec (5 × 2.0)
+- Fire Rate: 5 shots/sec (unchanged)
 - Mag Size: 24 (12 × 2.0)
-- Reload: 0.6s (1.2 × 0.5)
+- Reload: 1.2s (unchanged)
 
 ---
 

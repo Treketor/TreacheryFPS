@@ -37,6 +37,16 @@ public class HoardLocomotion : MonoBehaviour
     [Tooltip("Stopping distance from target")]
     public float stoppingDistance = 1.5f;
 
+    [Header("Animation")]
+    [Tooltip("Animator component (assign manually - can be on child object)")]
+    public Animator animator;
+    [Tooltip("Name of the Speed parameter in the animator")]
+    public string speedParameterName = "Speed";
+    [Tooltip("Normalize speed value (0-1) or use actual speed units")]
+    public bool normalizeSpeed = true;
+    [Tooltip("Maximum speed value for normalization (when normalizeSpeed is true)")]
+    public float maxSpeedForNormalization = 3f;
+
     private NavMeshAgent agent;
     private Vector3 currentVelocity;
     private int zombieID;
@@ -161,6 +171,34 @@ public class HoardLocomotion : MonoBehaviour
         }
         
         agent.speed = walkSpeed * speedMultiplier;
+        
+        // Update animation based on current movement speed
+        UpdateAnimation();
+    }
+
+    void UpdateAnimation()
+    {
+        if (animator == null || string.IsNullOrEmpty(speedParameterName))
+            return;
+
+        // Get current movement speed from NavMeshAgent
+        float currentSpeed = agent.velocity.magnitude;
+        
+        // Handle different speed parameter formats
+        float speedValue;
+        if (normalizeSpeed)
+        {
+            // Normalize to 0-1 range based on max speed
+            speedValue = Mathf.Clamp01(currentSpeed / maxSpeedForNormalization);
+        }
+        else
+        {
+            // Use raw speed value
+            speedValue = currentSpeed;
+        }
+        
+        // Set the animator parameter
+        animator.SetFloat(speedParameterName, speedValue);
     }
 
     Vector3 CalculateCirclePosition()

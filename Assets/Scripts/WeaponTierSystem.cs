@@ -78,9 +78,9 @@ public static class WeaponTierSystem
             new Color(0.3f, 0.5f, 1.0f), // Blue
             250,  // Cost to upgrade to Epic
             1.5f,  // +50% damage
-            1.2f,  // +20% fire rate
+            1.0f,  // fire rate (unchanged)
             1.3f,  // +30% mag size
-            0.85f, // -15% reload time
+            1.0f,  // reload time (unchanged)
             0.9f   // -10% spread (better accuracy)
         ),
         
@@ -91,9 +91,9 @@ public static class WeaponTierSystem
             new Color(0.8f, 0.2f, 0.8f), // Purple
             500,  // Cost to upgrade to Legendary
             2.5f,  // +150% damage
-            1.5f,  // +50% fire rate
+            1.0f,  // fire rate (unchanged)
             1.6f,  // +60% mag size
-            0.7f,  // -30% reload time
+            1.0f,  // reload time (unchanged)
             0.7f   // -30% spread
         ),
         
@@ -104,9 +104,9 @@ public static class WeaponTierSystem
             new Color(1.0f, 0.8f, 0.0f), // Gold
             0,     // No further upgrades
             4.0f,  // +300% damage
-            2.0f,  // +100% fire rate
+            1.0f,  // fire rate (unchanged)
             2.0f,  // +100% mag size
-            0.5f,  // -50% reload time
+            1.0f,  // reload time (unchanged)
             0.5f   // -50% spread
         )
     };

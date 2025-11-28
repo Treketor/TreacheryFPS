@@ -34,6 +34,13 @@ public class WeaponController : MonoBehaviour
     InputAction _reloadAction;
     InputAction _switchWeaponAction;
     InputAction _aimAction;
+    InputAction _scrollWheelAction;
+    
+    // Number key actions for direct weapon selection
+    InputAction _weapon1Action;
+    InputAction _weapon2Action;
+    InputAction _weapon3Action;
+    InputAction _weapon4Action;
 
     void Awake()
     {
@@ -43,6 +50,13 @@ public class WeaponController : MonoBehaviour
             _reloadAction = playerInput.FindAction("Reload");
             _switchWeaponAction = playerInput.FindAction("SwitchWeapon");
             _aimAction = playerInput.FindAction("Aim");
+            _scrollWheelAction = playerInput.FindAction("ScrollWheel");
+            
+            // Try to find number key actions (may not exist in input asset)
+            _weapon1Action = playerInput.FindAction("Weapon1");
+            _weapon2Action = playerInput.FindAction("Weapon2");
+            _weapon3Action = playerInput.FindAction("Weapon3");
+            _weapon4Action = playerInput.FindAction("Weapon4");
             
             if (_attackAction == null)
                 Debug.LogWarning("WeaponController: Attack action not found in InputActionAsset!");
@@ -52,6 +66,8 @@ public class WeaponController : MonoBehaviour
                 Debug.LogWarning("WeaponController: SwitchWeapon action not found in InputActionAsset!");
             if (_aimAction == null)
                 Debug.LogWarning("WeaponController: Aim action not found in InputActionAsset!");
+            if (_scrollWheelAction == null)
+                Debug.LogWarning("WeaponController: ScrollWheel action not found in InputActionAsset!");
         }
         else
         {
@@ -123,8 +139,37 @@ public class WeaponController : MonoBehaviour
         bool isAiming = _aimAction != null && _aimAction.IsPressed();
         bool switchPressed = _switchWeaponAction != null && _switchWeaponAction.WasPressedThisFrame();
         
+        // Handle scroll wheel weapon switching
+        float scrollValue = 0f;
+        if (_scrollWheelAction != null)
+        {
+            Vector2 scrollInput = _scrollWheelAction.ReadValue<Vector2>();
+            scrollValue = scrollInput.y; // Y component is the scroll wheel
+        }
+        
+        // Handle number key weapon switching
+        int directWeaponIndex = -1;
+        if (_weapon1Action != null && _weapon1Action.WasPressedThisFrame()) directWeaponIndex = 0;
+        else if (_weapon2Action != null && _weapon2Action.WasPressedThisFrame()) directWeaponIndex = 1;
+        else if (_weapon3Action != null && _weapon3Action.WasPressedThisFrame()) directWeaponIndex = 2;
+        else if (_weapon4Action != null && _weapon4Action.WasPressedThisFrame()) directWeaponIndex = 3;
+        
         // If switching weapons, force ADS off
-        if (switchPressed)
+        if (directWeaponIndex >= 0) // Number key pressed
+        {
+            isAiming = false;
+            if (CurrentWeapon != null)
+            {
+                Debug.Log($"WeaponController: Canceling ADS on {CurrentWeapon.DisplayName} due to number key");
+            }
+            
+            // Switch directly to the specified weapon slot if it has a weapon
+            if (directWeaponIndex < weaponSlots.Length && weaponSlots[directWeaponIndex] != null)
+            {
+                SwitchToWeapon(directWeaponIndex);
+            }
+        }
+        else if (switchPressed)
         {
             isAiming = false;
             if (CurrentWeapon != null)
@@ -132,6 +177,24 @@ public class WeaponController : MonoBehaviour
                 Debug.Log($"WeaponController: Canceling ADS on {CurrentWeapon.DisplayName} due to weapon switch input");
             }
             SwitchToNextWeapon();
+        }
+        else if (Mathf.Abs(scrollValue) > 0.1f) // Scroll wheel threshold
+        {
+            isAiming = false;
+            if (CurrentWeapon != null)
+            {
+                Debug.Log($"WeaponController: Canceling ADS on {CurrentWeapon.DisplayName} due to scroll wheel");
+            }
+            
+            // Scroll up = previous weapon, scroll down = next weapon
+            if (scrollValue > 0)
+            {
+                SwitchToPreviousWeapon();
+            }
+            else
+            {
+                SwitchToNextWeapon();
+            }
         }
         
         // Apply ADS state to current weapon
@@ -253,6 +316,23 @@ public class WeaponController : MonoBehaviour
                 return;
             }
             nextIndex = (nextIndex + 1) % weaponSlots.Length;
+        }
+    }
+    
+    public void SwitchToPreviousWeapon()
+    {
+        // Find previous available weapon slot
+        int startIndex = activeWeaponIndex;
+        int prevIndex = (activeWeaponIndex - 1 + weaponSlots.Length) % weaponSlots.Length;
+        
+        while (prevIndex != startIndex)
+        {
+            if (weaponSlots[prevIndex] != null)
+            {
+                SwitchToWeapon(prevIndex);
+                return;
+            }
+            prevIndex = (prevIndex - 1 + weaponSlots.Length) % weaponSlots.Length;
         }
     }
 
