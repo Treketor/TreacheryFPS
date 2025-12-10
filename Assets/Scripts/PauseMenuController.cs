@@ -164,7 +164,7 @@ public class PauseMenuController : MonoBehaviour
         if (resumeButton != null)
             resumeButton.Select();
         
-        Debug.Log("Game Paused");
+
     }
     
     public void ResumeGame()
@@ -192,7 +192,7 @@ public class PauseMenuController : MonoBehaviour
         // Play resume sound
         PlayMenuSound(menuSelectSound);
         
-        Debug.Log("Game Resumed");
+
     }
     
     void DisableGameplayInput()

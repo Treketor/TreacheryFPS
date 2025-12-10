@@ -52,6 +52,7 @@ public class HoardLocomotion : MonoBehaviour
     private int zombieID;
     private float assignedAngle; // Angle around player for this zombie
     private bool isInAttackPosition = false; // Set by EnemyController
+    private EnemyController enemyController; // Reference to check spawn delay
 
     void Awake()
     {
@@ -89,6 +90,9 @@ public class HoardLocomotion : MonoBehaviour
                 player = playerObj.transform;
             }
         }
+        
+        // Get EnemyController reference for spawn delay coordination
+        enemyController = GetComponent<EnemyController>();
     }
 
     public void SetInAttackPosition(bool inPosition)
@@ -108,6 +112,17 @@ public class HoardLocomotion : MonoBehaviour
     {
         if (player == null || agent == null || !agent.isOnNavMesh)
             return;
+            
+        // Don't move during spawn delay
+        if (enemyController != null && enemyController.IsSpawnDelayActive)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+            
+            // Update animation to show idle state during spawn delay
+            UpdateAnimation();
+            return;
+        }
 
         // Calculate distance to player
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
@@ -118,6 +133,9 @@ public class HoardLocomotion : MonoBehaviour
             // Ensure agent stays completely stopped
             agent.isStopped = true;
             agent.velocity = Vector3.zero; // Keep zeroing velocity to prevent drift
+            
+            // Update animation to show idle state when stopped for attack
+            UpdateAnimation();
             return;
         }
         else

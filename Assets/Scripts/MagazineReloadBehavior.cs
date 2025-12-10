@@ -12,11 +12,11 @@ public class MagazineReloadBehavior : IWeaponReloadBehavior
     [SerializeField] private float reloadDuration = 2.0f;
     [Tooltip("Total time to complete the reload")]
     
-    [SerializeField] private float baseAnimationDuration = 2.0f;
-    [Tooltip("Base duration of the reload animation at normal speed")]
+    // [SerializeField] private float baseAnimationDuration = 2.0f; // Unused - commented out to eliminate warning
+    // [Tooltip("Base duration of the reload animation at normal speed")]
     
-    [SerializeField] private float reloadDelayBuffer = 0.5f;
-    [Tooltip("Extra time after animation completes before weapon is ready")]
+    // [SerializeField] private float reloadDelayBuffer = 0.5f; // Unused - commented out to eliminate warning
+    // [Tooltip("Extra time after animation completes before weapon is ready")]
     
     [Header("Animation")]
     [SerializeField] private string reloadTriggerName = "Reload";
@@ -112,14 +112,10 @@ public class MagazineReloadBehavior : IWeaponReloadBehavior
 
     private IEnumerator MagazineReloadCoroutine(int currentAmmo, int maxAmmo, int reserveAmmo)
     {
-        // Calculate animation speed based on reload time
-        float targetAnimationDuration = Mathf.Max(0.1f, reloadDuration - reloadDelayBuffer);
-        float animationSpeed = baseAnimationDuration / targetAnimationDuration;
-        
-        // Apply animation speed and trigger
+        // Play animation at normal speed (1.0x)
         if (_animator != null)
         {
-            _animator.speed = animationSpeed;
+            _animator.speed = 1.0f;
             
             if (!string.IsNullOrEmpty(reloadTriggerName))
             {

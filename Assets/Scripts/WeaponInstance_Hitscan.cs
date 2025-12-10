@@ -20,10 +20,12 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public float baseFireRate = 5f;
     [Tooltip("Base magazine size")]
     public int baseMagSize = 12;
-    [Tooltip("Base reload time in seconds")]
+    [Tooltip("Base reload animation duration in seconds (should match your animation length)")]
     public float baseReloadTime = 1.2f;
     [Tooltip("Base spread/accuracy - this becomes the minimum bloom")]
     public float baseSpread = 1.5f;
+    [Tooltip("Base bullet force applied to ragdolls on death")]
+    public float baseBulletForce = 400f;
     
     [Header("Bloom System")]
     [Tooltip("Tightest and most accurate bloom value")]
@@ -48,6 +50,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     int magSize;
     float reloadTime;
     float spread;
+    float bulletForce;
 
     [Header("Ammo Pools")]
     [Tooltip("Initial reserve ammo when weapon is created")]
@@ -71,6 +74,14 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [Header("Bullet Impact Effects")]
     [SerializeField] bool enableImpactEffects = true;
     [Tooltip("Whether to spawn impact effects when bullets hit surfaces")]
+    [SerializeField] bool enableEnemyImpactEffects = true;
+    [Tooltip("Use separate impact effects for hitting enemies")]
+    [SerializeField] GameObject enemyImpactEffectPrefab;
+    [Tooltip("Custom impact effect prefab for hitting enemies")]
+    [SerializeField] float enemyImpactEffectLifetime = 2f;
+    [Tooltip("How long the enemy impact effect lasts before being destroyed")]
+    [SerializeField] bool parentToHitObject = true;
+    [Tooltip("Make the enemy impact effect a child of the hit object (follows movement)")]
     
     [Header("Pellet System (Shotgun)")]
     [SerializeField] bool usePelletSystem = false;
@@ -93,7 +104,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [Header("Animation")]
     [SerializeField] Animator animator;
     [SerializeField] string shootTriggerName = "Shoot";
-    [SerializeField] string reloadTriggerName = "Reload";
+    // [SerializeField] string reloadTriggerName = "Reload"; // Unused - commented out to eliminate warning
     [SerializeField] string switchOutTriggerName = "Switch Out";
     [SerializeField] string currentAmmoParameterName = "Current Ammo";
     [SerializeField] bool autoFindAnimator = true;
@@ -103,10 +114,8 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [SerializeField] ReloadType reloadType = ReloadType.Magazine;
     
     [Header("Magazine Reload Settings")]
-    [Tooltip("Base duration of reload animation at normal speed")]
-    [SerializeField] float baseReloadAnimationDuration = 2.0f;
-    [Tooltip("Extra time after animation completes before weapon is ready")]
-    [SerializeField] float reloadDelayBuffer = 0.5f;
+    // [Tooltip("Extra time after reload animation completes before weapon is ready (ADS, shooting, etc.)")]
+    // [SerializeField] float reloadDelayBuffer = 0.5f; // Unused - commented out to eliminate warning
     
     [Header("Single Bullet Reload Settings")]
     [Tooltip("Settings for single bullet reload behavior (pump shotgun style)")]
@@ -133,8 +142,8 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [SerializeField] Vector3 adsPosition = new Vector3(0f, 0f, 0.2f);
     [Tooltip("Speed of weapon position transition to ADS")]
     [SerializeField] float adsPositionSpeed = 12f;
-    [Tooltip("Spread multiplier when aiming (lower = more accurate)")]
-    [SerializeField] float adsSpreadMultiplier = 0.3f;
+    // [Tooltip("Spread multiplier when aiming (lower = more accurate)")]
+    // [SerializeField] float adsSpreadMultiplier = 0.3f; // Unused - commented out to eliminate warning
     [Tooltip("Recoil multiplier when aiming (lower = less recoil)")]
     [SerializeField] float adsRecoilMultiplier = 0.5f;
     [Tooltip("Animator bool parameter name for ADS state")]
@@ -176,6 +185,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public int CurrentReserve => _reserve;
     public float CurrentDamage => damage;
     public float CurrentFireRate => fireRate;
+    public float CurrentBulletForce => bulletForce;
     public bool IsReloading => _reloadBehavior?.IsReloading ?? false;
     public bool IsSwitching => _switchCooldown > 0f;
     public bool IsReady => !IsReloading && _cooldown <= 0f && _switchCooldown <= 0f;
@@ -204,8 +214,6 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         if (!weaponRecoil && autoFindRecoil)
         {
             weaponRecoil = FindFirstObjectByType<WeaponRecoil>();
-            if (weaponRecoil)
-                Debug.Log($"WeaponInstance_Hitscan ({displayName}): Auto-found WeaponRecoil component");
         }
         
         // Initialize crosshair system
@@ -305,7 +313,9 @@ public class WeaponInstance_Hitscan : MonoBehaviour
                     finalRecoilMultiplier *= adsRecoilMultiplier;
                 }
                 weaponRecoil.ApplyRecoil(finalRecoilMultiplier);
-            }        // Trigger muzzle flash
+            }
+        
+        // Trigger muzzle flash
         if (muzzleFlashObject != null)
         {
             StartCoroutine(ShowMuzzleFlash());
@@ -410,10 +420,11 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         bool isHeadshot = false;
         float finalDamage = falloffDamage;
 
-        // Check for headshot zone first
-        if (hit.collider.TryGetComponent<HeadshotZone>(out var headshotZone))
+        // Check if we hit a head collider by looking for HeadshotZone in parent
+        HeadshotZone headshotZone = hit.collider.GetComponentInParent<HeadshotZone>();
+        if (headshotZone != null && headshotZone.IsHeadCollider(hit.collider))
         {
-            isHeadshot = headshotZone.ProcessHeadshot(falloffDamage, hit.point, hit.normal, out finalDamage);
+            isHeadshot = headshotZone.ProcessHeadshot(falloffDamage, hit.point, hit.normal, bulletForce, out finalDamage);
             
             // Register headshot for accuracy tracking (only once per shot, not per pellet)
             if (isHeadshot && ScoreManager.Instance != null)
@@ -430,15 +441,20 @@ public class WeaponInstance_Hitscan : MonoBehaviour
 
             if (damageable != null)
             {
-                damageable.TakeDamage(pelletDamage, hit.point, hit.normal);
+                // Try to use EnemyHealth overload with bullet force if available
+                if (damageable is EnemyHealth enemyHealth)
+                {
+                    enemyHealth.TakeDamage(falloffDamage, hit.point, Vector3.zero, CurrentBulletForce);
+                }
+                else
+                {
+                    damageable.TakeDamage(falloffDamage, hit.point, Vector3.zero);
+                }
             }
         }
 
-        // Spawn impact effect at hit point
-        if (enableImpactEffects && BulletImpactManager.Instance != null)
-        {
-            BulletImpactManager.Instance.SpawnImpactEffect(hit.point, hit.normal, hit.collider);
-        }
+        // Spawn appropriate impact effect
+        SpawnImpactEffect(hit, isHeadshot);
     }
 
     /// <summary>
@@ -453,10 +469,11 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         bool isHeadshot = false;
         float finalDamage = falloffDamage;
 
-        // Check for headshot zone first
-        if (hit.collider.TryGetComponent<HeadshotZone>(out var headshotZone))
+        // Check if we hit a head collider by looking for HeadshotZone in parent
+        HeadshotZone headshotZone = hit.collider.GetComponentInParent<HeadshotZone>();
+        if (headshotZone != null && headshotZone.IsHeadCollider(hit.collider))
         {
-            isHeadshot = headshotZone.ProcessHeadshot(falloffDamage, hit.point, hit.normal, out finalDamage);
+            isHeadshot = headshotZone.ProcessHeadshot(falloffDamage, hit.point, hit.normal, CurrentBulletForce, out finalDamage);
             
             // Register headshot for accuracy tracking
             if (isHeadshot && ScoreManager.Instance != null)
@@ -473,12 +490,61 @@ public class WeaponInstance_Hitscan : MonoBehaviour
 
             if (damageable != null)
             {
-                damageable.TakeDamage(bulletDamage, hit.point, hit.normal);
+                // Try to use EnemyHealth overload with bullet force if available
+                if (damageable is EnemyHealth enemyHealthBullet)
+                {
+                    enemyHealthBullet.TakeDamage(falloffDamage, hit.point, hit.normal, CurrentBulletForce);
+                }
+                else
+                {
+                    damageable.TakeDamage(falloffDamage, hit.point, hit.normal);
+                }
             }
         }
 
-        // Spawn impact effect at hit point
-        if (enableImpactEffects && BulletImpactManager.Instance != null)
+        // Spawn appropriate impact effect
+        SpawnImpactEffect(hit, isHeadshot);
+    }
+
+    /// <summary>
+    /// Spawn appropriate impact effect based on what was hit
+    /// </summary>
+    private void SpawnImpactEffect(RaycastHit hit, bool isHeadshot)
+    {
+        if (!enableImpactEffects) return;
+
+        // Check if we hit an enemy by looking for IDamageable or HeadshotZone components
+        bool hitEnemy = hit.collider.GetComponent<IDamageable>() != null || 
+                       hit.collider.GetComponentInParent<IDamageable>() != null ||
+                       hit.collider.GetComponent<HeadshotZone>() != null;
+                       
+        // Also check if we hit a ragdoll (former enemy)
+        if (!hitEnemy)
+        {
+            ZombieRagdoll ragdoll = hit.collider.GetComponentInParent<ZombieRagdoll>();
+            if (ragdoll != null && ragdoll.IsRagdoll)
+            {
+                hitEnemy = true;
+            }
+        }
+
+        // Use enemy impact effect if hitting an enemy and it's enabled
+        if (hitEnemy && enableEnemyImpactEffects && enemyImpactEffectPrefab != null)
+        {
+            // Spawn custom enemy impact effect
+            GameObject impactEffect = Instantiate(enemyImpactEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
+            
+            // Parent to hit object if enabled
+            if (parentToHitObject)
+            {
+                impactEffect.transform.SetParent(hit.collider.transform);
+            }
+            
+            // Destroy after specified lifetime
+            Destroy(impactEffect, enemyImpactEffectLifetime);
+        }
+        // Use standard impact effect for non-enemies or as fallback
+        else if (BulletImpactManager.Instance != null)
         {
             BulletImpactManager.Instance.SpawnImpactEffect(hit.point, hit.normal, hit.collider);
         }
@@ -527,7 +593,6 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         OnAmmoChanged?.Invoke(_inMag, _reserve);
         UpdateAnimatorAmmo();
         
-        Debug.Log($"{displayName}: Added {actualAmountAdded} ammo, now {_inMag}/{magSize}");
     }
 
     /// <summary>
@@ -535,7 +600,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     /// </summary>
     private void OnReloadComplete()
     {
-        Debug.Log($"{displayName}: Reload completed");
+
     }
 
     /// <summary>
@@ -543,7 +608,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     /// </summary>
     private void OnReloadCancelled()
     {
-        Debug.Log($"{displayName}: Reload cancelled");
+
     }
 
     /// <summary>
@@ -573,7 +638,6 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         {
             // Instead of cancelling, request finish reload (cocking animation)
             singleBulletBehavior.RequestFinishReload();
-            Debug.Log($"{displayName}: Requesting finish reload animation before shooting");
             return false; // Return false to prevent immediate shooting
         }
 
@@ -586,7 +650,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     public void OnWeaponActivated()
     {
         _switchCooldown = weaponSwitchDelay;
-        Debug.Log($"{displayName} activated - switch cooldown: {weaponSwitchDelay}s");
+
     }
 
     /// <summary>
@@ -598,14 +662,13 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         // Cancel ADS when switching weapons
         if (_isAiming)
         {
-            Debug.Log($"{displayName}: Canceling ADS due to weapon switch");
             SetAiming(false);
         }
         
         if (animator != null && !string.IsNullOrEmpty(switchOutTriggerName))
         {
             animator.SetTrigger(switchOutTriggerName);
-            Debug.Log($"{displayName} triggered switch out animation - delay: {switchOutAnimationDelay}s");
+
         }
         return switchOutAnimationDelay;
     }
@@ -646,11 +709,11 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         // If no crosshair is assigned, the CrosshairManager will use the default crosshair
         if (crosshairSprite != null)
         {
-            Debug.Log($"WeaponInstance_Hitscan ({displayName}): Using assigned crosshair sprite");
+            
         }
         else
         {
-            Debug.Log($"WeaponInstance_Hitscan ({displayName}): No crosshair assigned, will use default crosshair");
+            // Use default crosshair
         }
     }
     
@@ -740,6 +803,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         magSize = Mathf.RoundToInt(baseMagSize * tierData.magSizeMultiplier);
         reloadTime = baseReloadTime; // No speed upgrades
         spread = baseSpread * tierData.spreadMultiplier;
+        bulletForce = baseBulletForce * tierData.damageMultiplier; // Scale force with damage
         
         // Reload behaviors use base timing (no speed upgrades)
         if (_magazineReloadBehavior != null)
@@ -828,13 +892,12 @@ public class WeaponInstance_Hitscan : MonoBehaviour
                 _magazineReloadBehavior.Initialize(this, animator);
                 _magazineReloadBehavior.SetReloadDuration(baseReloadTime);
                 _reloadBehavior = _magazineReloadBehavior;
-                Debug.Log($"WeaponInstance_Hitscan ({displayName}): Using Magazine reload behavior");
+
                 break;
                 
             case ReloadType.SingleBullet:
                 singleBulletReload.Initialize(this, animator);
                 _reloadBehavior = singleBulletReload;
-                Debug.Log($"WeaponInstance_Hitscan ({displayName}): Using Single Bullet reload behavior");
                 break;
         }
     }

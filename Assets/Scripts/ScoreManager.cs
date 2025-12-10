@@ -99,7 +99,7 @@ public class ScoreManager : MonoBehaviour
         AddScore(points);
         OnKill?.Invoke(totalKills);
 
-        Debug.Log($"Kill registered! {'('}Headshot: {isHeadshot}, Boss: {isBoss}{')'} +{points} points");
+
     }
 
     /// <summary>

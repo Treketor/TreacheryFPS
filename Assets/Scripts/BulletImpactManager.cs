@@ -31,7 +31,6 @@ public class BulletImpactManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("Multiple BulletImpactManager instances found! Destroying duplicate.");
             Destroy(gameObject);
             return;
         }
@@ -51,7 +50,6 @@ public class BulletImpactManager : MonoBehaviour
         
         if (impactPrefab == null)
         {
-            Debug.LogWarning("BulletImpactManager: No impact prefab available!");
             return;
         }
         
@@ -74,8 +72,6 @@ public class BulletImpactManager : MonoBehaviour
         {
             Destroy(impactEffect, effectLifetime);
         }
-        
-        Debug.Log($"BulletImpactManager: Spawned impact effect at {hitPoint}");
     }
     
     /// <summary>

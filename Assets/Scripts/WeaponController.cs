@@ -160,7 +160,7 @@ public class WeaponController : MonoBehaviour
             isAiming = false;
             if (CurrentWeapon != null)
             {
-                Debug.Log($"WeaponController: Canceling ADS on {CurrentWeapon.DisplayName} due to number key");
+
             }
             
             // Switch directly to the specified weapon slot if it has a weapon
@@ -174,7 +174,7 @@ public class WeaponController : MonoBehaviour
             isAiming = false;
             if (CurrentWeapon != null)
             {
-                Debug.Log($"WeaponController: Canceling ADS on {CurrentWeapon.DisplayName} due to weapon switch input");
+
             }
             SwitchToNextWeapon();
         }
@@ -183,7 +183,7 @@ public class WeaponController : MonoBehaviour
             isAiming = false;
             if (CurrentWeapon != null)
             {
-                Debug.Log($"WeaponController: Canceling ADS on {CurrentWeapon.DisplayName} due to scroll wheel");
+
             }
             
             // Scroll up = previous weapon, scroll down = next weapon
@@ -238,14 +238,12 @@ public class WeaponController : MonoBehaviour
         // Prevent switching if current weapon is not ready (still in switch cooldown)
         if (CurrentWeapon != null && !CurrentWeapon.IsReady)
         {
-            Debug.Log("Cannot switch weapons while current weapon is not ready");
             return;
         }
 
         // Check if switching during reload is allowed
         if (!allowSwitchDuringReload && CurrentWeapon != null && CurrentWeapon.IsReloading)
         {
-            Debug.Log("Cannot switch weapons while reloading");
             return;
         }
 
@@ -264,7 +262,6 @@ public class WeaponController : MonoBehaviour
             if (CurrentWeapon.IsReloading && allowSwitchDuringReload)
             {
                 CurrentWeapon.CancelReload();
-                Debug.Log($"Cancelled reload on {CurrentWeapon.DisplayName} due to weapon switch");
             }
 
             // Trigger switch-out animation and wait for it
@@ -296,8 +293,6 @@ public class WeaponController : MonoBehaviour
         {
             CrosshairManager.Instance.UpdateCrosshair();
         }
-
-        Debug.Log($"Switched to weapon slot {weaponIndex}: {CurrentWeaponDisplayName}");
 
         _isSwitching = false;
     }
@@ -343,8 +338,6 @@ public class WeaponController : MonoBehaviour
 
         weaponSlots[slotIndex] = weapon;
         weapon.gameObject.SetActive(false); // Hide by default
-
-        Debug.Log($"Added weapon '{weapon.DisplayName}' to slot {slotIndex}");
     }
 
     public WeaponInstance_Hitscan GetWeaponInSlot(int slotIndex)

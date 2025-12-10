@@ -14,14 +14,24 @@ public class EnemyController : MonoBehaviour
     [Tooltip("How fast the enemy rotates to face player during attack")]
     public float attackRotationSpeed = 720f;
 
+    [Header("Spawn Settings")]
+    [Tooltip("Time to wait before zombie starts moving after spawn")]
+    public float spawnDelay = 2f;
+    [Tooltip("Whether to disable movement during spawn delay")]
+    public bool freezeOnSpawn = true;
+
     Transform _player;
     NavMeshAgent _agent;
     HoardLocomotion _locomotion;
+    Animator _animator;
     float _cd;
     float _attackStopTimer;
     bool _isAttacking;
+    float _spawnTimer;
+    bool _isSpawnDelayActive;
 
     public bool IsInAttackPosition { get; private set; }
+    public bool IsSpawnDelayActive => _isSpawnDelayActive;
 
     void Start() 
     { 
@@ -33,11 +43,55 @@ public class EnemyController : MonoBehaviour
 
         _agent = GetComponent<NavMeshAgent>();
         _locomotion = GetComponent<HoardLocomotion>();
+        _animator = GetComponentInChildren<Animator>();
+        
+        // Set random Y rotation on spawn
+        transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+        
+        // Initialize spawn delay
+        _spawnTimer = spawnDelay;
+        _isSpawnDelayActive = spawnDelay > 0f;
+        
+        // Stop movement during spawn delay if enabled
+        if (_isSpawnDelayActive && freezeOnSpawn)
+        {
+            if (_agent != null && _agent.isOnNavMesh)
+            {
+                _agent.isStopped = true;
+            }
+        }
     }
 
     void Update()
     {
         if (!_player) return;
+        
+        // Handle spawn delay
+        if (_isSpawnDelayActive)
+        {
+            _spawnTimer -= Time.deltaTime;
+            
+            if (_spawnTimer <= 0f)
+            {
+                _isSpawnDelayActive = false;
+                
+                // Resume movement after spawn delay
+                if (freezeOnSpawn && _agent != null && _agent.isOnNavMesh)
+                {
+                    _agent.isStopped = false;
+                }
+            }
+            else
+            {
+                // During spawn delay, keep zombie stopped if freeze is enabled
+                if (freezeOnSpawn && _agent != null && _agent.isOnNavMesh)
+                {
+                    _agent.isStopped = true;
+                    _agent.velocity = Vector3.zero;
+                }
+                return; // Skip all other logic during spawn delay
+            }
+        }
         
         // Cooldown timer
         if (_cd > 0f) _cd -= Time.deltaTime;
@@ -91,6 +145,15 @@ public class EnemyController : MonoBehaviour
 
         // Face player immediately when starting attack
         FacePlayer();
+
+        // Trigger attack animation with random variation
+        if (_animator != null)
+        {
+            // Randomly choose between attack animation 0, 1, or 2
+            int attackVariation = Random.Range(0, 3);
+            _animator.SetInteger("AttackInt", attackVariation);
+            _animator.SetTrigger("Attack");
+        }
 
         if (_player.TryGetComponent<IDamageable>(out var damageable))
         {

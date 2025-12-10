@@ -28,8 +28,8 @@ public class SingleBulletReloadBehavior : IWeaponReloadBehavior
     [SerializeField] private bool autoFinishWhenFull = true;
     [Tooltip("Automatically play finish reload animation when magazine is full")]
     
-    [SerializeField] private float autoFinishDelay = 0.3f;
-    [Tooltip("Delay before auto-finishing when magazine becomes full")]
+    // [SerializeField] private float autoFinishDelay = 0.3f; // Unused - commented out to eliminate warning
+    // [Tooltip("Delay before auto-finishing when magazine becomes full")]
 
     // Runtime state
     private bool _isReloading = false;
@@ -118,7 +118,6 @@ public class SingleBulletReloadBehavior : IWeaponReloadBehavior
         if (_isReloading && _currentPhase == ReloadPhase.LoadingSingleBullet)
         {
             _finishReloadRequested = true;
-            Debug.Log("Finish reload requested - will complete current bullet and finish");
         }
     }
 
@@ -148,12 +147,10 @@ public class SingleBulletReloadBehavior : IWeaponReloadBehavior
         if (wasCancelled)
         {
             _onReloadCancelled?.Invoke();
-            Debug.Log("Single bullet reload cancelled");
         }
         else
         {
             _onReloadComplete?.Invoke();
-            Debug.Log("Single bullet reload completed");
         }
     }
 
@@ -167,7 +164,6 @@ public class SingleBulletReloadBehavior : IWeaponReloadBehavior
             _animator.SetTrigger(startReloadTrigger);
         }
         
-        Debug.Log("Starting pump shotgun reload (lifting weapon)");
         yield return new WaitForSeconds(startReloadDuration);
 
         // Phase 2: Load Single Bullets (can be interrupted)
@@ -180,13 +176,9 @@ public class SingleBulletReloadBehavior : IWeaponReloadBehavior
             {
                 _animator.SetTrigger(reloadSingleBulletTrigger);
             }
-
-            Debug.Log($"Starting to load bullet {_currentAmmo + 1}/{_maxAmmo} - waiting {singleBulletReloadDuration}s");
             
             // Wait for animation duration first
             yield return new WaitForSeconds(singleBulletReloadDuration);
-            
-            Debug.Log($"Animation complete, now adding bullet {_currentAmmo + 1}/{_maxAmmo}");
             
             // Then add one bullet after animation completes
             if (_reserveAmmo > 0)
@@ -194,7 +186,6 @@ public class SingleBulletReloadBehavior : IWeaponReloadBehavior
                 _currentAmmo++;
                 _reserveAmmo--;
                 _onAmmoAdded?.Invoke(1); // Add 1 bullet
-                Debug.Log($"Bullet added - now have {_currentAmmo}/{_maxAmmo}");
             }
 
             // Check if we should auto-finish when full
@@ -206,7 +197,6 @@ public class SingleBulletReloadBehavior : IWeaponReloadBehavior
             // Check if finish reload was requested (interrupt to shoot)
             if (_finishReloadRequested)
             {
-                Debug.Log("Finish reload requested - exiting bullet loading loop");
                 break;
             }
 
@@ -226,7 +216,6 @@ public class SingleBulletReloadBehavior : IWeaponReloadBehavior
             _animator.SetTrigger(finishReloadTrigger);
         }
         
-        Debug.Log("Finishing pump shotgun reload (cocking weapon)");
         yield return new WaitForSeconds(finishReloadDuration);
 
         // Reload complete

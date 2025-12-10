@@ -19,20 +19,41 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     public System.Action<EnemyHealth> OnDeath;
     float _hp;
     bool _killedByHeadshot = false; // Track if killed by headshot
+    bool _isDead = false; // Prevent multiple death processing
+    float _lastBulletForce = 400f; // Store bullet force from weapon
+    ZombieRagdoll _ragdoll;
 
-    void Awake() { _hp = maxHealth; }
+    void Awake() 
+    { 
+        _hp = maxHealth; 
+        _ragdoll = GetComponent<ZombieRagdoll>();
+    }
 
     public void TakeDamage(float amount, Vector3 hitPoint, Vector3 hitNormal)
     {
-        if (_hp <= 0f) return;
+        TakeDamage(amount, hitPoint, hitNormal, 400f); // Default bullet force
+    }
+
+    public void TakeDamage(float amount, Vector3 hitPoint, Vector3 hitNormal, float bulletForce)
+    {
+        if (_isDead) return; // Prevent damage after death
+        
+        // Store bullet force for death calculation
+        _lastBulletForce = bulletForce;
+        
+        // Debug damage dealt
+        Debug.Log($"<color=orange>{gameObject.name}</color> took <color=yellow>{amount:F1}</color> damage. HP: {_hp:F1} -> {(_hp - amount):F1}");
+        
         _hp -= amount;
         // TODO: hit FX / stagger
-        if (_hp <= 0f)
+        if (_hp <= 0f && !_isDead)
         {
+            _isDead = true; // Mark as dead immediately to prevent multiple death calls
+            Debug.Log($"<color=red>{gameObject.name} DIED!</color> (Final damage: {amount:F1})");
             OnDeath?.Invoke(this);
             RegisterKillInScoreSystem();
             SpawnSouls();
-            Destroy(gameObject);
+            Die(hitPoint, hitNormal, amount);
         }
     }
 
@@ -41,7 +62,10 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     /// </summary>
     public void MarkAsHeadshot()
     {
-        _killedByHeadshot = true;
+        if (!_isDead) // Only mark headshot if not already dead
+        {
+            _killedByHeadshot = true;
+        }
     }
 
     void RegisterKillInScoreSystem()
@@ -70,4 +94,70 @@ public class EnemyHealth : MonoBehaviour, IDamageable
             }
         }
     }
+
+    /// <summary>
+    /// Handle enemy death with ragdoll integration
+    /// </summary>
+    void Die(Vector3 hitPoint, Vector3 hitDirection, float finalDamage)
+    {
+        // IMMEDIATELY remove zombie from game logic (for wave/scoring systems)
+        RemoveFromGameSystems();
+        
+        if (_ragdoll != null)
+        {
+            // Calculate death force based on hit direction and damage
+            Vector3 deathForce = CalculateDeathForce(hitDirection, finalDamage);
+            
+            // Pass death force to ragdoll
+            _ragdoll.CreateDetachedRagdoll(deathForce, hitPoint);
+            
+            // IMMEDIATELY destroy this GameObject so WaveManager counts it as dead
+            Destroy(gameObject, 0.1f); // Small delay to ensure ragdoll creation completes
+        }
+        else
+        {
+            // No ragdoll component - just destroy immediately
+            Destroy(gameObject);
+        }
+    }
+
+    /// <summary>
+    /// Calculate appropriate death force based on hit direction and damage
+    /// </summary>
+    Vector3 CalculateDeathForce(Vector3 hitDirection, float damage)
+    {
+        // Normalize hit direction
+        if (hitDirection == Vector3.zero)
+        {
+            hitDirection = Vector3.forward; // Default forward direction if no direction provided
+        }
+        else
+        {
+            hitDirection = hitDirection.normalized;
+        }
+        
+        // Use weapon-specific bullet force with damage scaling
+        float damageMultiplier = Mathf.Clamp01(damage / maxHealth) * 0.5f + 0.5f; // Scale from 0.5 to 1.0
+        float forceStrength = _lastBulletForce * damageMultiplier;
+        
+        return hitDirection * forceStrength;
+    }
+    
+    /// <summary>
+    /// Remove zombie from all game tracking systems immediately
+    /// </summary>
+    void RemoveFromGameSystems()
+    {
+        // Notify any game systems that this enemy has been killed
+        // You can add specific system notifications here as needed
+        // For example:
+        // - Wave management systems
+        // - Enemy counters
+        // - Achievement systems
+        // etc.
+        
+
+    }
+
+
 }
