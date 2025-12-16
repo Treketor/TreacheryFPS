@@ -67,7 +67,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [SerializeField] bool autoFindRecoil = true;
 
     [Header("Muzzle Flash")]
-    [SerializeField] GameObject muzzleFlashObject;
+    [SerializeField] GameObject[] muzzleFlashObjects;
     [Tooltip("Duration of muzzle flash effect in seconds")]
     [SerializeField] float muzzleFlashDuration = 0.05f;
 
@@ -88,6 +88,8 @@ public class WeaponInstance_Hitscan : MonoBehaviour
     [Tooltip("Enable to fire multiple pellets per shot (shotgun behavior)")]
     [SerializeField] int pelletsPerShot = 8;
     [Tooltip("Number of pellets fired per trigger pull")]
+    [SerializeField] int bulletsPerShot = 1;
+    [Tooltip("Number of bullets consumed from magazine per shot (for dual weapons, set to 2)")]
     [SerializeField] float pelletSpreadMultiplier = 3.0f;
     [Tooltip("Multiplier for pellet spread relative to base weapon spread")]
     [SerializeField] float pelletDamageMultiplier = 1.0f;
@@ -228,10 +230,16 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         // Initialize reload behavior system
         InitializeReloadBehavior();
 
-        // Make sure muzzle flash starts disabled
-        if (muzzleFlashObject != null)
+        // Make sure all muzzle flash objects start disabled
+        if (muzzleFlashObjects != null)
         {
-            muzzleFlashObject.SetActive(false);
+            foreach (GameObject muzzleFlash in muzzleFlashObjects)
+            {
+                if (muzzleFlash != null)
+                {
+                    muzzleFlash.SetActive(false);
+                }
+            }
         }
 
         // Validate raycaster reference
@@ -276,8 +284,8 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         if (IsReloading && !TryInterruptReloadForShooting()) return;
         if (_cooldown > 0f || _switchCooldown > 0f) return;
 
-        // Auto-reload if magazine is empty
-        if (_inMag <= 0)
+        // Check if we have enough bullets to fire
+        if (_inMag < bulletsPerShot)
         {
             // Only try to reload if not already reloading to prevent spam
             if (!IsReloading)
@@ -290,7 +298,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         }
 
         _cooldown = 1f / fireRate;
-        _inMag--;
+        _inMag -= bulletsPerShot; // Consume multiple bullets per shot
         OnAmmoChanged?.Invoke(_inMag, _reserve);
         UpdateAnimatorAmmo(); // Update animator parameter after ammo changes
 
@@ -316,7 +324,7 @@ public class WeaponInstance_Hitscan : MonoBehaviour
             }
         
         // Trigger muzzle flash
-        if (muzzleFlashObject != null)
+        if (muzzleFlashObjects != null && muzzleFlashObjects.Length > 0)
         {
             StartCoroutine(ShowMuzzleFlash());
         }
@@ -552,14 +560,26 @@ public class WeaponInstance_Hitscan : MonoBehaviour
 
     IEnumerator ShowMuzzleFlash()
     {
-        // Activate muzzle flash
-        muzzleFlashObject.SetActive(true);
+        // Activate all muzzle flash objects
+        foreach (GameObject muzzleFlash in muzzleFlashObjects)
+        {
+            if (muzzleFlash != null)
+            {
+                muzzleFlash.SetActive(true);
+            }
+        }
         
         // Wait for brief duration
         yield return new WaitForSeconds(muzzleFlashDuration);
         
-        // Deactivate muzzle flash
-        muzzleFlashObject.SetActive(false);
+        // Deactivate all muzzle flash objects
+        foreach (GameObject muzzleFlash in muzzleFlashObjects)
+        {
+            if (muzzleFlash != null)
+            {
+                muzzleFlash.SetActive(false);
+            }
+        }
     }
 
 
@@ -628,8 +648,8 @@ public class WeaponInstance_Hitscan : MonoBehaviour
         if (!IsReloading || reloadType != ReloadType.SingleBullet) 
             return false;
 
-        // Don't interrupt reload if magazine is empty - need at least 1 bullet to shoot
-        if (_inMag <= 0)
+        // Don't interrupt reload if we don't have enough bullets to shoot
+        if (_inMag < bulletsPerShot)
             return false;
 
         // Check if the single bullet reload can be safely interrupted
