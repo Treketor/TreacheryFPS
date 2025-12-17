@@ -9,10 +9,17 @@ public class ZombieRagdoll : MonoBehaviour
     [Header("Ragdoll Settings")]
     [Tooltip("Force applied to ragdoll when activated")]
     [SerializeField] float ragdollForce = 500f;
-    [Tooltip("How long before the ragdoll is destroyed (0 = never)")]
-    [SerializeField] float ragdollLifetime = 15f;
+    [Tooltip("Cleanup ragdolls when wave completes (recommended)")]
+    [SerializeField] bool cleanupOnWaveComplete = true;
+    [Tooltip("Delay before cleaning up ragdolls after wave completion")]
+    [SerializeField] float waveCleanupDelay = 5f;
     [Tooltip("Layer to put ragdoll colliders on")]
     [SerializeField] LayerMask ragdollLayer = 1;
+    [Tooltip("Ignore collisions with these layers (typically Player and Enemy layers)")]
+    [SerializeField] LayerMask ignoreCollisionLayers = 0;
+    
+    // Static tracking for wave completion cleanup
+    private static readonly System.Collections.Generic.List<ZombieRagdoll> _activeRagdolls = new();
     
     [Header("Components")]
     [Tooltip("Main character collider (will be disabled when ragdoll activates)")]
@@ -42,12 +49,18 @@ public class ZombieRagdoll : MonoBehaviour
             mainCollider = GetComponent<Collider>();
         }
         
-        // Start with ragdoll disabled
-        SetRagdollEnabled(false);
+        // Disable main collider and use ragdoll colliders for live enemies
+        if (mainCollider != null)
+        {
+            mainCollider.enabled = false;
+        }
+        
+        // Start with ragdoll colliders enabled for live enemy hit detection
+        SetLiveEnemyColliders(true);
     }
     
     /// <summary>
-    /// Activate the ragdoll with optional death force (and destroy GameObject after lifetime)
+    /// Activate the ragdoll with optional death force (will persist until wave completion)
     /// </summary>
     /// <param name="forceDirection">Direction and strength of death force</param>
     /// <param name="forcePoint">Point where force is applied (optional)</param>
@@ -55,10 +68,10 @@ public class ZombieRagdoll : MonoBehaviour
     {
         ActivateRagdollWithoutDestroy(forceDirection, forcePoint);
         
-        // Set cleanup timer
-        if (ragdollLifetime > 0)
+        // Register for wave completion cleanup
+        if (cleanupOnWaveComplete)
         {
-            Destroy(gameObject, ragdollLifetime);
+            RegisterForWaveCleanup();
         }
     }
     
@@ -71,24 +84,120 @@ public class ZombieRagdoll : MonoBehaviour
     {
         if (isRagdoll) return;
         
-
-        
         isRagdoll = true;
         
         // Disable other components first
         DisableZombieComponents();
         
-        // Enable ragdoll physics
-        SetRagdollEnabled(true);
+        // Transition from live enemy colliders to full ragdoll physics
+        SetLiveEnemyColliders(false); // Disable live enemy setup
+        SetRagdollEnabled(true);       // Enable full ragdoll physics with collision filtering
         
         // Apply death force
         ApplyDeathForce(forceDirection, forcePoint);
     }
     
     /// <summary>
-    /// Get the ragdoll lifetime for external systems to use
+    /// Register this ragdoll for cleanup when the wave completes
     /// </summary>
-    public float RagdollLifetime => ragdollLifetime;
+    private void RegisterForWaveCleanup()
+    {
+        if (!_activeRagdolls.Contains(this))
+        {
+            _activeRagdolls.Add(this);
+            
+            // Subscribe to wave completion events if this is the first ragdoll
+            if (_activeRagdolls.Count == 1)
+            {
+                SubscribeToWaveEvents();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Subscribe to ScoreManager wave completion events
+    /// </summary>
+    private static void SubscribeToWaveEvents()
+    {
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.OnWaveComplete.AddListener(OnWaveCompleted);
+        }
+    }
+    
+    /// <summary>
+    /// Handle wave completion - clean up all ragdolls after a delay
+    /// </summary>
+    private static void OnWaveCompleted(int waveNumber)
+    {
+        Debug.Log($"Wave {waveNumber} completed! Will clean up {_activeRagdolls.Count} ragdolls after delay.");
+        
+        // Find a MonoBehaviour to start the coroutine on
+        // Use the first available ragdoll if any exist
+        if (_activeRagdolls.Count > 0 && _activeRagdolls[0] != null)
+        {
+            _activeRagdolls[0].StartCoroutine(DelayedCleanupCoroutine());
+        }
+        else
+        {
+            // No ragdolls to clean up
+            CleanupAllRagdolls();
+        }
+    }
+    
+    /// <summary>
+    /// Coroutine to handle delayed ragdoll cleanup
+    /// </summary>
+    private static System.Collections.IEnumerator DelayedCleanupCoroutine()
+    {
+        // Get delay from the first ragdoll (they should all have the same setting)
+        float delay = _activeRagdolls.Count > 0 && _activeRagdolls[0] != null ? _activeRagdolls[0].waveCleanupDelay : 5f;
+        
+        yield return new WaitForSeconds(delay);
+        
+        CleanupAllRagdolls();
+    }
+    
+    /// <summary>
+    /// Clean up all ragdolls immediately
+    /// </summary>
+    private static void CleanupAllRagdolls()
+    {
+        Debug.Log($"Cleaning up {_activeRagdolls.Count} ragdolls now.");
+        
+        // Clean up all registered ragdolls
+        for (int i = _activeRagdolls.Count - 1; i >= 0; i--)
+        {
+            if (_activeRagdolls[i] != null)
+            {
+                Destroy(_activeRagdolls[i].gameObject);
+            }
+        }
+        
+        // Clear the list
+        _activeRagdolls.Clear();
+        
+        // Unsubscribe since no ragdolls remain
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.OnWaveComplete.RemoveListener(OnWaveCompleted);
+        }
+    }
+    
+    void OnDestroy()
+    {
+        // Remove from active ragdolls list when destroyed
+        if (_activeRagdolls.Contains(this))
+        {
+            _activeRagdolls.Remove(this);
+            
+            // If no ragdolls remain, unsubscribe from events
+            if (_activeRagdolls.Count == 0 && ScoreManager.Instance != null)
+            {
+                ScoreManager.Instance.OnWaveComplete.RemoveListener(OnWaveCompleted);
+            }
+        }
+    }
     
     /// <summary>
     /// Create a detached ragdoll GameObject that persists after the original is destroyed
@@ -187,14 +296,43 @@ public class ZombieRagdoll : MonoBehaviour
             enemyHealth.enabled = false;
         }
         
-        // Disable main character collider
-        if (mainCollider != null)
-        {
-            mainCollider.enabled = false;
-        }
+        // Main collider is already disabled - ragdoll colliders handle all collision detection
         
         // Move to a different layer if needed (ragdoll layer)
         gameObject.layer = Mathf.RoundToInt(Mathf.Log(ragdollLayer.value, 2));
+    }
+    
+    /// <summary>
+    /// Configure colliders for live enemy (kinematic, no physics forces)
+    /// </summary>
+    private void SetLiveEnemyColliders(bool enabled)
+    {
+        foreach (Rigidbody rb in ragdollRigidbodies)
+        {
+            if (rb != null)
+            {
+                // Keep kinematic for live enemies (no physics)
+                rb.isKinematic = true;
+                
+                if (enabled)
+                {
+                    // Clear any residual velocities
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                }
+            }
+        }
+        
+        foreach (Collider col in ragdollColliders)
+        {
+            if (col != null && col != mainCollider)
+            {
+                col.enabled = enabled;
+                
+                // Don't apply collision filtering for live enemies - they should hit normally
+                // Only apply filtering when in actual ragdoll state
+            }
+        }
     }
     
     /// <summary>
@@ -215,7 +353,14 @@ public class ZombieRagdoll : MonoBehaviour
                     rb.angularVelocity = Vector3.zero;
                     
                     // Set ragdoll layer
-                    rb.gameObject.layer = Mathf.RoundToInt(Mathf.Log(ragdollLayer.value, 2));
+                    int ragdollLayerIndex = Mathf.RoundToInt(Mathf.Log(ragdollLayer.value, 2));
+                    rb.gameObject.layer = ragdollLayerIndex;
+                    
+                    // Configure collision filtering if this rigidbody has a collider
+                    if (rb.TryGetComponent<Collider>(out var rbCollider))
+                    {
+                        ConfigureCollisionFiltering(rbCollider, ragdollLayerIndex);
+                    }
                 }
             }
         }
@@ -229,8 +374,27 @@ public class ZombieRagdoll : MonoBehaviour
                 if (enabled)
                 {
                     // Set ragdoll layer
-                    col.gameObject.layer = Mathf.RoundToInt(Mathf.Log(ragdollLayer.value, 2));
+                    int ragdollLayerIndex = Mathf.RoundToInt(Mathf.Log(ragdollLayer.value, 2));
+                    col.gameObject.layer = ragdollLayerIndex;
+                    
+                    // Configure collision filtering
+                    ConfigureCollisionFiltering(col, ragdollLayerIndex);
                 }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Configure collision filtering for ragdoll colliders
+    /// </summary>
+    private void ConfigureCollisionFiltering(Collider ragdollCollider, int ragdollLayerIndex)
+    {
+        // Ignore collisions with specified layers (Player, Enemy, etc.)
+        for (int i = 0; i < 32; i++)
+        {
+            if ((ignoreCollisionLayers.value & (1 << i)) != 0)
+            {
+                Physics.IgnoreLayerCollision(ragdollLayerIndex, i, true);
             }
         }
     }

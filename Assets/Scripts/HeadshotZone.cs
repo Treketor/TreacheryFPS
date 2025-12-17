@@ -8,19 +8,16 @@ using UnityEngine;
 public class HeadshotZone : MonoBehaviour
 {
     [Header("References")]
-    [Tooltip("Child GameObject that represents the head position (will get the collider)")]
-    [SerializeField] GameObject headObject;
+    [Tooltip("The ragdoll head collider that should be treated as the headshot zone")]
+    [SerializeField] Collider headCollider;
     [Tooltip("The enemy's main GameObject with IDamageable component (leave empty to use this object)")]
     [SerializeField] GameObject enemyRoot;
     
     [Header("Headshot Settings")]
     [Tooltip("Damage multiplier for headshots")]
     [SerializeField] float headshotDamageMultiplier = 2.0f;
-    [Tooltip("Radius of the headshot zone collider")]
-    [SerializeField] float headshotRadius = 0.3f;
 
     IDamageable _damageable;
-    Collider _headshotCollider;
 
     void Start()
     {
@@ -40,37 +37,14 @@ public class HeadshotZone : MonoBehaviour
             }
         }
 
-        // Setup headshot collider
-        SetupHeadshotCollider();
-    }
-
-    void SetupHeadshotCollider()
-    {
-        if (headObject != null)
+        // Validate head collider assignment
+        if (headCollider == null)
         {
-            // Add collider to the head object if it doesn't have one
-            _headshotCollider = headObject.GetComponent<Collider>();
-            if (_headshotCollider == null)
-            {
-                // Create a sphere collider on the head object
-                SphereCollider sphereCol = headObject.AddComponent<SphereCollider>();
-                sphereCol.radius = headshotRadius;
-                sphereCol.isTrigger = true;
-                _headshotCollider = sphereCol;
-            }
-            else
-            {
-                // Ensure existing collider is a trigger
-                _headshotCollider.isTrigger = true;
-            }
-
-            // Don't create additional HeadshotZone components - the weapon system will find this one via GetComponentInParent
-        }
-        else
-        {
-            Debug.LogWarning($"HeadshotZone on {gameObject.name}: No head object assigned!");
+            Debug.LogWarning($"HeadshotZone on {gameObject.name}: No head collider assigned!");
         }
     }
+
+
 
     /// <summary>
     /// Called by weapon raycast when headshot zone is hit.
@@ -124,37 +98,69 @@ public class HeadshotZone : MonoBehaviour
     /// </summary>
     public bool IsHeadCollider(Collider collider)
     {
-        if (headObject == null || _headshotCollider == null)
-            return false;
-            
-        return collider == _headshotCollider;
+        return headCollider != null && collider == headCollider;
     }
 
     void OnDrawGizmos()
     {
         // Always show headshot zone in Scene view
-        if (headObject != null)
+        if (headCollider != null)
         {
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(headObject.transform.position, headshotRadius);
+            Gizmos.matrix = headCollider.transform.localToWorldMatrix;
             
-            // Draw a slightly transparent filled sphere for better visibility
-            Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
-            Gizmos.DrawSphere(headObject.transform.position, headshotRadius);
+            // Draw wireframe based on collider type
+            if (headCollider is SphereCollider sphere)
+            {
+                Gizmos.DrawWireSphere(sphere.center, sphere.radius);
+                Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
+                Gizmos.DrawSphere(sphere.center, sphere.radius);
+            }
+            else if (headCollider is BoxCollider box)
+            {
+                Gizmos.DrawWireCube(box.center, box.size);
+                Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
+                Gizmos.DrawCube(box.center, box.size);
+            }
+            else if (headCollider is CapsuleCollider capsule)
+            {
+                // Approximate capsule with sphere for simplicity
+                Gizmos.DrawWireSphere(capsule.center, capsule.radius);
+                Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
+                Gizmos.DrawSphere(capsule.center, capsule.radius);
+            }
+            
+            Gizmos.matrix = Matrix4x4.identity;
         }
     }
 
     void OnDrawGizmosSelected()
     {
         // Show a brighter version when selected
-        if (headObject != null)
+        if (headCollider != null)
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(headObject.transform.position, headshotRadius);
+            Gizmos.matrix = headCollider.transform.localToWorldMatrix;
             
-            // Draw connection line from this object to head object
+            // Draw yellow wireframe based on collider type
+            if (headCollider is SphereCollider sphere)
+            {
+                Gizmos.DrawWireSphere(sphere.center, sphere.radius);
+            }
+            else if (headCollider is BoxCollider box)
+            {
+                Gizmos.DrawWireCube(box.center, box.size);
+            }
+            else if (headCollider is CapsuleCollider capsule)
+            {
+                Gizmos.DrawWireSphere(capsule.center, capsule.radius);
+            }
+            
+            Gizmos.matrix = Matrix4x4.identity;
+            
+            // Draw connection line from this object to head collider
             Gizmos.color = Color.cyan;
-            Gizmos.DrawLine(transform.position, headObject.transform.position);
+            Gizmos.DrawLine(transform.position, headCollider.transform.position);
         }
     }
 }

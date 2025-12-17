@@ -191,10 +191,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZombieRagdoll
   ragdollForce: 0
-  ragdollLifetime: 15
+  cleanupOnWaveComplete: 1
+  waveCleanupDelay: 5
   ragdollLayer:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 1024
+  ignoreCollisionLayers:
+    serializedVersion: 2
+    m_Bits: 200
   mainCollider: {fileID: 304876699967371805}
   autoFindMainCollider: 1
 --- !u!114 &8167048273176386479
@@ -209,10 +213,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35ab9fab911d2434a94fff5cb2d05498, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HeadshotZone
-  headObject: {fileID: 1584989419584076777}
+  headCollider: {fileID: 5430292790677737932}
   enemyRoot: {fileID: 0}
   headshotDamageMultiplier: 3
-  headshotRadius: 0.15
 --- !u!1001 &8098337021206251819
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1070,11 +1073,6 @@ CharacterJoint:
   m_EnablePreprocessing: 0
   m_MassScale: 1
   m_ConnectedMassScale: 1
---- !u!1 &1584989419584076777 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7321746780505993922, guid: 18dc3961742573541a92f585afd49fd2, type: 3}
-  m_PrefabInstance: {fileID: 8098337021206251819}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1768105082814642412 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7559996389290045895, guid: 18dc3961742573541a92f585afd49fd2, type: 3}
