@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f52b38d18cbc6b49bafa8995e6c137f, type: 3}
+  m_Name: PumpShotgun
+  m_EditorClassIdentifier: Assembly-CSharp::Treachery.Weapons.Data.WeaponDefinition
+  viewPrefab: {fileID: 2286591347898268798, guid: 51f79c4f9b2cf9042a657331dec41db3, type: 3}
+  crosshairSprite: {fileID: 0}
+  displayName: Pump Shotgun
+  baseDamage: 50
+  baseFireRate: 0.7
+  baseMagSize: 5
+  baseReloadTime: 1.2
+  baseSpread: 1.5
+  baseBulletForce: 200
+  startingReserveAmmo: 30
+  maxRange: 100
+  hitMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  ignoreLayerMask:
+    serializedVersion: 2
+    m_Bits: 776
+  usePelletSystem: 1
+  pelletsPerShot: 8
+  bulletsPerShot: 1
+  pelletSpreadMultiplier: 3
+  pelletDamageMultiplier: 1
+  enableDamageFalloff: 1
+  damageFalloffCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.5
+      value: 0.25
+      inSlope: -1
+      outSlope: -1
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maxDamageRange: 50
+  supportsADS: 1
+  adsFOV: 60
+  adsTransitionSpeed: 16
+  adsPosition: {x: -0.2068, y: 0.14, z: -0.1}
+  adsPositionSpeed: 12
+  adsRecoilMultiplier: 0.85
+  recoilMultiplier: 10
+  reloadType: 1
+  startReloadDuration: 0.625
+  singleBulletReloadDuration: 0.83
+  finishReloadDuration: 1.25

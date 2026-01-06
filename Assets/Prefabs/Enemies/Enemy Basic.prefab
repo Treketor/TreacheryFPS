@@ -13,10 +13,11 @@ GameObject:
   - component: {fileID: 2342840078033441265}
   - component: {fileID: 378495380331521260}
   - component: {fileID: 4500233602390487160}
+  - component: {fileID: 8780790898932856159}
+  - component: {fileID: 8167048273176386479}
+  - component: {fileID: 7453701778413877586}
   - component: {fileID: 4358988134128468475}
   - component: {fileID: 7845276893598869776}
-  - component: {fileID: 7453701778413877586}
-  - component: {fileID: 8167048273176386479}
   m_Layer: 6
   m_Name: Enemy Basic
   m_TagString: Untagged
@@ -129,6 +130,59 @@ MonoBehaviour:
   soulPickupPrefab: {fileID: 398041584917184814, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
   soulsToDropMin: 1
   soulsToDropMax: 3
+--- !u!114 &8780790898932856159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2153138576233801362}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ef94b1e88abea64eb6f8c9b49b6d069, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Treachery.Weapons.Runtime.EnemyHitReceiver
+  enemyHealth: {fileID: 4500233602390487160}
+  headshotZone: {fileID: 8167048273176386479}
+  registerHeadshotsInScore: 1
+--- !u!114 &8167048273176386479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2153138576233801362}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35ab9fab911d2434a94fff5cb2d05498, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeadshotZone
+  headCollider: {fileID: 5430292790677737932}
+  enemyRoot: {fileID: 2153138576233801362}
+  headshotDamageMultiplier: 3
+--- !u!114 &7453701778413877586
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2153138576233801362}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c6a49b50cdf6cb47a8d0e4e27811e5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieRagdoll
+  ragdollForce: 0
+  cleanupOnWaveComplete: 1
+  waveCleanupDelay: 5
+  ragdollLayer:
+    serializedVersion: 2
+    m_Bits: 1024
+  ignoreCollisionLayers:
+    serializedVersion: 2
+    m_Bits: 200
+  mainCollider: {fileID: 304876699967371805}
+  autoFindMainCollider: 1
 --- !u!114 &4358988134128468475
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -178,44 +232,6 @@ MonoBehaviour:
   speedParameterName: Speed
   normalizeSpeed: 0
   maxSpeedForNormalization: 3
---- !u!114 &7453701778413877586
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2153138576233801362}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2c6a49b50cdf6cb47a8d0e4e27811e5b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ZombieRagdoll
-  ragdollForce: 0
-  cleanupOnWaveComplete: 1
-  waveCleanupDelay: 5
-  ragdollLayer:
-    serializedVersion: 2
-    m_Bits: 1024
-  ignoreCollisionLayers:
-    serializedVersion: 2
-    m_Bits: 200
-  mainCollider: {fileID: 304876699967371805}
-  autoFindMainCollider: 1
---- !u!114 &8167048273176386479
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2153138576233801362}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 35ab9fab911d2434a94fff5cb2d05498, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HeadshotZone
-  headCollider: {fileID: 5430292790677737932}
-  enemyRoot: {fileID: 0}
-  headshotDamageMultiplier: 3
 --- !u!1001 &8098337021206251819
 PrefabInstance:
   m_ObjectHideFlags: 0

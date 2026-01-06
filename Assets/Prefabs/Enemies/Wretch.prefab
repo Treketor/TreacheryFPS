@@ -13,8 +13,9 @@ GameObject:
   - component: {fileID: 2650141715179221223}
   - component: {fileID: 680898999031160666}
   - component: {fileID: 2954196288755187887}
-  - component: {fileID: 8481867363444024718}
+  - component: {fileID: 7931042491329237757}
   - component: {fileID: 5615238875241117099}
+  - component: {fileID: 8481867363444024718}
   m_Layer: 6
   m_Name: Wretch
   m_TagString: Untagged
@@ -127,6 +128,36 @@ MonoBehaviour:
   soulPickupPrefab: {fileID: 398041584917184814, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
   soulsToDropMin: 1
   soulsToDropMax: 3
+--- !u!114 &7931042491329237757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5640548554968815128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ef94b1e88abea64eb6f8c9b49b6d069, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Treachery.Weapons.Runtime.EnemyHitReceiver
+  enemyHealth: {fileID: 2954196288755187887}
+  headshotZone: {fileID: 5615238875241117099}
+  registerHeadshotsInScore: 1
+--- !u!114 &5615238875241117099
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5640548554968815128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35ab9fab911d2434a94fff5cb2d05498, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeadshotZone
+  headCollider: {fileID: 4892631159037034418}
+  enemyRoot: {fileID: 5640548554968815128}
+  headshotDamageMultiplier: 2
 --- !u!114 &8481867363444024718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -150,21 +181,6 @@ MonoBehaviour:
     m_Bits: 200
   mainCollider: {fileID: 2711062458367398092}
   autoFindMainCollider: 1
---- !u!114 &5615238875241117099
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5640548554968815128}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 35ab9fab911d2434a94fff5cb2d05498, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HeadshotZone
-  headCollider: {fileID: 4892631159037034418}
-  enemyRoot: {fileID: 0}
-  headshotDamageMultiplier: 2
 --- !u!1001 &6111486364043539959
 PrefabInstance:
   m_ObjectHideFlags: 0

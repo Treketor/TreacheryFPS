@@ -41,11 +41,11 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: Idle
+      name: Melee 2
       takeName: Scene
       internalID: -623603649343465320
       firstFrame: 0
-      lastFrame: 250
+      lastFrame: 43
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
