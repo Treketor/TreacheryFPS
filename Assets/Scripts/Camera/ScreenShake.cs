@@ -69,12 +69,16 @@ public class ScreenShake : MonoBehaviour
     [Tooltip("Maximum number of overlapping shakes kept at once.")]
     [SerializeField, Min(1)] int maxConcurrentShakes = 16;
 
-    [Tooltip("If enabled, uses the camera's initial local position as the rest position each frame.")]
-    [SerializeField] bool lockToInitialLocalPosition = true;
+    [Tooltip("If enabled, uses a stored baseline local position as the rest position. The baseline updates when no shakes are active.")]
+    [SerializeField] bool lockToInitialLocalPosition = false;
 
     readonly List<ActiveShake> _active = new List<ActiveShake>(16);
 
     Vector3 _initialLocalPosition;
+
+    // Track what we applied last frame so we can remove it before sampling the base transform.
+    Vector3 _appliedPositionOffset;
+    Quaternion _appliedRotationOffset = Quaternion.identity;
 
     void Awake()
     {
@@ -100,6 +104,8 @@ public class ScreenShake : MonoBehaviour
     void OnEnable()
     {
         _initialLocalPosition = transform.localPosition;
+        _appliedPositionOffset = Vector3.zero;
+        _appliedRotationOffset = Quaternion.identity;
     }
 
     /// <summary>
@@ -158,11 +164,17 @@ public class ScreenShake : MonoBehaviour
 
     void LateUpdate()
     {
-        if (_active.Count == 0)
+        // Remove last frame's shake before sampling the base transform.
+        Vector3 baseLocalPosition = transform.localPosition - _appliedPositionOffset;
+        Quaternion baseLocalRotation = transform.localRotation * Quaternion.Inverse(_appliedRotationOffset);
+
+        if (lockToInitialLocalPosition)
         {
-            if (lockToInitialLocalPosition)
-                transform.localPosition = _initialLocalPosition;
-            return;
+            // If other scripts (crouch, head-bob, etc.) move the camera, update the baseline when not shaking.
+            if (_active.Count == 0)
+                _initialLocalPosition = baseLocalPosition;
+
+            baseLocalPosition = _initialLocalPosition;
         }
 
         float now = Time.time;
@@ -199,16 +211,12 @@ public class ScreenShake : MonoBehaviour
             totalRot += Vector3.Scale(new Vector3(rx, ry, rz), s.rotationStrength) * amp;
         }
 
-        // Position: keep it stable (no accumulation).
-        if (lockToInitialLocalPosition)
-            transform.localPosition = _initialLocalPosition + totalPos;
-        else
-            transform.localPosition = transform.localPosition + totalPos;
+        // Apply as a pure additive offset.
+        transform.localPosition = baseLocalPosition + totalPos;
+        transform.localRotation = baseLocalRotation * Quaternion.Euler(totalRot);
 
-        // Rotation: additive on top of whatever FirstPersonLook/recoil already set this frame.
-        // (FirstPersonLook writes localRotation in Update, we apply shake in LateUpdate.)
-        Quaternion baseRotation = transform.localRotation;
-        transform.localRotation = baseRotation * Quaternion.Euler(totalRot);
+        _appliedPositionOffset = totalPos;
+        _appliedRotationOffset = Quaternion.Euler(totalRot);
     }
 
     static float NoiseSigned(float seed, float t)

@@ -215,6 +215,10 @@ PrefabInstance:
       propertyPath: m_AABB.m_Extent.z
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -6576534410649096982, guid: 80cbd25249304264fa6219f5a1386f69, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f0b30b0a1f5d2f94b93cd3190fe8bfd2, type: 2}
     - target: {fileID: -6508026054961550441, guid: 80cbd25249304264fa6219f5a1386f69, type: 3}
       propertyPath: m_Layer
       value: 8
@@ -363,6 +367,10 @@ PrefabInstance:
       propertyPath: m_AABB.m_Extent.z
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1630794972795428178, guid: 80cbd25249304264fa6219f5a1386f69, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f0b30b0a1f5d2f94b93cd3190fe8bfd2, type: 2}
     - target: {fileID: 1821482356801905920, guid: 80cbd25249304264fa6219f5a1386f69, type: 3}
       propertyPath: m_Layer
       value: 8
@@ -423,6 +431,10 @@ PrefabInstance:
       propertyPath: m_CastShadows
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5797384429611982230, guid: 80cbd25249304264fa6219f5a1386f69, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 82dd86d50e76f0b4b808c9ec1b504971, type: 2}
     - target: {fileID: 6099974988753030230, guid: 80cbd25249304264fa6219f5a1386f69, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -451,6 +463,10 @@ PrefabInstance:
       propertyPath: m_AABB.m_Extent.z
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6099974988753030230, guid: 80cbd25249304264fa6219f5a1386f69, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f0b30b0a1f5d2f94b93cd3190fe8bfd2, type: 2}
     - target: {fileID: 6619225641134156614, guid: 80cbd25249304264fa6219f5a1386f69, type: 3}
       propertyPath: m_Layer
       value: 8
@@ -487,6 +503,10 @@ PrefabInstance:
       propertyPath: m_AABB.m_Extent.z
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7223127514310306688, guid: 80cbd25249304264fa6219f5a1386f69, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f0b30b0a1f5d2f94b93cd3190fe8bfd2, type: 2}
     - target: {fileID: 7408301651368860672, guid: 80cbd25249304264fa6219f5a1386f69, type: 3}
       propertyPath: m_Layer
       value: 8
