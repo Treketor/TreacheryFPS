@@ -230,6 +230,9 @@ MonoBehaviour:
   destinationUpdateInterval: 0.1
   faceTargetWhileAttacking: 1
   faceTargetTurnSpeed: 720
+  forceChaseSpeed: 1
+  chaseSpeed: 1
+  chaseAcceleration: 30
   spawnDelay: 7.5
   freezeOnSpawn: 1
   meleeRange: 2.5

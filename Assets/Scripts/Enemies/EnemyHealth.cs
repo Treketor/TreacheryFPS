@@ -20,6 +20,7 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     public int soulsToDropMax = 3;
 
     public System.Action<EnemyHealth> OnDeath;
+    public System.Action<float, Vector3, Vector3> OnDamaged; // amount, hitPoint, hitNormal
     float _hp;
     bool _killedByHeadshot = false; // Track if killed by headshot
     bool _isDead = false; // Prevent multiple death processing
@@ -59,6 +60,7 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         Debug.Log($"<color=orange>{gameObject.name}</color> took <color=yellow>{amount:F1}</color> damage. HP: {_hp:F1} -> {(_hp - amount):F1}");
         
         _hp -= amount;
+        OnDamaged?.Invoke(amount, hitPoint, hitNormal);
         // TODO: hit FX / stagger
         if (_hp <= 0f && !_isDead)
         {

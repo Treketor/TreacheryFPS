@@ -19,6 +19,12 @@ public class GraveDiggerAI : MonoBehaviour
     [SerializeField] bool faceTargetWhileAttacking = true;
     [SerializeField] float faceTargetTurnSpeed = 720f;
 
+    [Tooltip("If enabled, the NavMeshAgent speed is forced to this value while chasing.")]
+    [SerializeField] bool forceChaseSpeed = true;
+    [SerializeField] float chaseSpeed = 2.5f;
+    [Tooltip("Higher = reaches chaseSpeed faster. Set high for a more constant feel.")]
+    [SerializeField] float chaseAcceleration = 30f;
+
     [Header("Spawn")]
     [SerializeField] float spawnDelay = 0f;
     [SerializeField] bool freezeOnSpawn = true;
@@ -193,6 +199,8 @@ public class GraveDiggerAI : MonoBehaviour
 
     void UpdateChasingAndAttacks()
     {
+        ApplyChaseMovementSettings();
+
         float dist = Vector3.Distance(transform.position, player.position);
 
         // Attack priority: melee if close, otherwise ranged if valid, otherwise chase.
@@ -226,6 +234,16 @@ public class GraveDiggerAI : MonoBehaviour
         }
 
         // Face direction of travel naturally via NavMeshAgent (default).
+    }
+
+    void ApplyChaseMovementSettings()
+    {
+        if (!forceChaseSpeed) return;
+        if (_agent == null || !_agent.isOnNavMesh) return;
+
+        _agent.speed = Mathf.Max(0f, chaseSpeed);
+        _agent.acceleration = Mathf.Max(0.01f, chaseAcceleration);
+        _agent.autoBraking = false;
     }
 
     bool HasLineOfSight()

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 85814c3986484034191d3504fb7fa139
+guid: c5e98df920934764fb9b082f3b8ece4f
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -8,7 +8,7 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: Material
-    second: {fileID: 2100000, guid: 4fef53221dfe72b4f8b17a8bf3f72f39, type: 2}
+    second: {fileID: 2100000, guid: 19a4648c702dcf8448e29d0596c0b57b, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -36,18 +36,18 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: Attack 2
+      name: Run
       takeName: Scene
       internalID: -623603649343465320
       firstFrame: 0
-      lastFrame: 24
+      lastFrame: 16
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 0
+      loopTime: 1
       loopBlend: 0
       loopBlendOrientation: 0
       loopBlendPositionY: 0

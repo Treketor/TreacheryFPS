@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 7931042491329237757}
   - component: {fileID: 5615238875241117099}
   - component: {fileID: 8481867363444024718}
+  - component: {fileID: 3086081254224604496}
   m_Layer: 6
   m_Name: Wretch
   m_TagString: Untagged
@@ -123,10 +124,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0e45dd55779b554492c7eea4065699c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
-  maxHealth: 50
+  maxHealth: 120
   isBoss: 0
   soulPickupPrefab: {fileID: 398041584917184814, guid: 4fe328d7e0ee3a24396d8fd5a2f2ee62, type: 3}
-  soulsToDropMin: 1
+  soulsToDropMin: 2
   soulsToDropMax: 3
 --- !u!114 &7931042491329237757
 MonoBehaviour:
@@ -181,6 +182,54 @@ MonoBehaviour:
     m_Bits: 200
   mainCollider: {fileID: 2711062458367398092}
   autoFindMainCollider: 1
+--- !u!114 &3086081254224604496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5640548554968815128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54fcd12998dc1194eb1c9cc208387174, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WretchStalkerAI
+  target: {fileID: 0}
+  playerTag: Player
+  spawnDelay: 5
+  stalkMinDistance: 10
+  stalkMaxDistance: 20
+  retreatIfCloserThan: 10
+  retreatStepDistanceRange: {x: 15, y: 20}
+  retreatAngleOffsetDegrees: 25
+  stalkFaceRotationSpeed: 999
+  timeBetweenAttacks: {x: 6, y: 12}
+  screechDuration: 4
+  frenzyDuration: {x: 4, y: 8}
+  calmSpeed: 6
+  calmAcceleration: 30
+  calmAngularSpeed: 999
+  frenzySpeed: 15
+  frenzyAcceleration: 999
+  frenzyAngularSpeed: 999
+  retreatSpeed: 12
+  retreatAcceleration: 30
+  retreatAngularSpeed: 999
+  destinationRefreshInterval: 0.15
+  meleeMinRange: 2
+  meleeRange: 4
+  meleeDamage: 14
+  attackCooldown: 0.8
+  attackStopDuration: 0.15
+  postAttackMovePause: 0.25
+  attackRotationSpeed: 900
+  animator: {fileID: 7487699621578672524}
+  moveBlendFloat: Speed
+  moveBlendDampTime: 0.15
+  screechTrigger: Screech
+  attackTrigger: Attack
+  attackIntParameter: AttackInt
+  attackIntVariants: 2
 --- !u!1001 &6111486364043539959
 PrefabInstance:
   m_ObjectHideFlags: 0
